@@ -1,33 +1,66 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Sparkles, Mail, Lock, AlertCircle, ArrowLeft, Bot } from 'lucide-react';
+import { Mail, Lock, AlertCircle, ArrowLeft, Bot, Check } from 'lucide-react';
+
+type TabType = 'login' | 'signup';
 
 export default function Login() {
+  const [activeTab, setActiveTab] = useState<TabType>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn, signInWithGoogle, signInDemo } = useAuth();
+  const { signIn, signUp, signInDemo } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
+  // Password validation for signup
+  const hasMinLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  
+  const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+  const doPasswordsMatch = password === confirmPassword;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      setError("Passwords don't match");
-      return;
-    }
+    setError(null);
+    setLoading(true);
+
     try {
-      setError(null);
-      setLoading(true);
-      await signIn(email, password);
-      navigate(from, { replace: true });
+      if (activeTab === 'login') {
+        await signIn(email, password);
+        navigate(from, { replace: true });
+      } else {
+        // Signup validation
+        if (!email || !password || !confirmPassword) {
+          throw new Error('All fields are required');
+        }
+
+        if (!isPasswordValid) {
+          throw new Error('Password does not meet requirements');
+        }
+
+        if (!doPasswordsMatch) {
+          throw new Error('Passwords do not match');
+        }
+
+        if (!acceptTerms) {
+          throw new Error('Please accept the terms and conditions');
+        }
+
+        await signUp(email, password);
+        navigate('/dashboard');
+      }
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -53,13 +86,39 @@ export default function Login() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Homepage
         </Link>
-        <div className="flex items-center justify-center">
-          <Sparkles className="h-8 w-8 text-blue-600" />
-          <h2 className="ml-2 text-2xl font-bold">SmartClicks.AI</h2>
+
+        {/* Tabs */}
+        <div className="flex justify-center space-x-4 mb-8">
+          <button
+            onClick={() => setActiveTab('login')}
+            className={`px-4 py-2 rounded-lg transition ${
+              activeTab === 'login'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => setActiveTab('signup')}
+            className={`px-4 py-2 rounded-lg transition ${
+              activeTab === 'signup'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Sign Up
+          </button>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          Create your account
+
+        <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900">
+          {activeTab === 'login' ? 'Welcome Back' : 'Create Your Account'}
         </h2>
+        {activeTab === 'signup' && (
+          <p className="mt-2 text-center text-gray-600">
+            Sign up to start your Google Ads audit journey
+          </p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -69,14 +128,8 @@ export default function Login() {
             disabled={loading}
             className="w-full mb-6 flex items-center justify-center gap-2 bg-blue-600 px-4 py-3 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Bot className="h-5 w-5" />
-                <span>Try Demo Account</span>
-              </>
-            )}
+            <Bot className="h-5 w-5" />
+            <span>Try Demo Account</span>
           </button>
 
           <button
@@ -96,7 +149,9 @@ export default function Login() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or sign up with email</span>
+              <span className="px-2 bg-white text-gray-500">
+                Or continue with email
+              </span>
             </div>
           </div>
 
@@ -137,7 +192,7 @@ export default function Login() {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={activeTab === 'login' ? 'current-password' : 'new-password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -146,34 +201,92 @@ export default function Login() {
               </div>
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <div className="mt-1 relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10 block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                />
-              </div>
-            </div>
+            {activeTab === 'signup' && (
+              <>
+                {/* Password requirements */}
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 mb-1">Password requirements:</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className={`flex items-center ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>8+ characters</span>
+                    </div>
+                    <div className={`flex items-center ${hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>Uppercase letter</span>
+                    </div>
+                    <div className={`flex items-center ${hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>Lowercase letter</span>
+                    </div>
+                    <div className={`flex items-center ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>Number</span>
+                    </div>
+                    <div className={`flex items-center ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>Special character</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <div className="mt-1 relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className={`pl-10 block w-full appearance-none rounded-md border px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 ${
+                        confirmPassword && !doPasswordsMatch ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {confirmPassword && !doPasswordsMatch && (
+                    <p className="mt-1 text-sm text-red-600">Passwords do not match</p>
+                  )}
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    id="terms"
+                    name="terms"
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="terms" className="ml-2 block text-sm text-gray-600">
+                    I accept the{' '}
+                    <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-700">
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-700">
+                      Privacy Policy
+                    </Link>
+                  </label>
+                </div>
+              </>
+            )}
 
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                disabled={loading || (activeTab === 'signup' && (!isPasswordValid || !doPasswordsMatch || !acceptTerms))}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {loading ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  'Sign up'
+                  activeTab === 'login' ? 'Sign In' : 'Create Account'
                 )}
               </button>
             </div>

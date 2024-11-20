@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ArrowLeft, Bot } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ArrowLeft, Bot, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -12,38 +12,65 @@ type Props = {
 export default function SignupStep({ onComplete, onBack }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
+
+  // Password validation
+  const hasMinLength = password.length >= 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  
+  const isPasswordValid = hasMinLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+  const doPasswordsMatch = password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       setError(null);
+
+      // Validate form
+      if (!email || !password || !confirmPassword) {
+        setError('All fields are required');
+        return;
+      }
+
+      if (!isPasswordValid) {
+        setError('Password does not meet requirements');
+        return;
+      }
+
+      if (!doPasswordsMatch) {
+        setError('Passwords do not match');
+        return;
+      }
+
+      if (!acceptTerms) {
+        setError('Please accept the terms and conditions');
+        return;
+      }
+
       setLoading(true);
       await signUp(email, password);
       onComplete();
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || 'Failed to create account');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGoogleSignup = async () => {
-    try {
-      setError(null);
-      await signInWithGoogle();
-      onComplete();
-    } catch (error: any) {
-      setError(error.message);
     }
   };
 
   const fillDemoAccount = () => {
     const timestamp = new Date().getTime();
     setEmail(`demo${timestamp}@example.com`);
-    setPassword('demo123456');
+    setPassword('Demo123!@#');
+    setConfirmPassword('Demo123!@#');
+    setAcceptTerms(true);
   };
 
   return (
@@ -73,7 +100,8 @@ export default function SignupStep({ onComplete, onBack }: Props) {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+            <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
@@ -111,18 +139,87 @@ export default function SignupStep({ onComplete, onBack }: Props) {
                 required
               />
             </div>
+            
+            {/* Password requirements */}
+            <div className="mt-2 space-y-2">
+              <p className="text-sm text-gray-600 mb-1">Password requirements:</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className={`flex items-center ${hasMinLength ? 'text-green-600' : 'text-gray-500'}`}>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>8+ characters</span>
+                </div>
+                <div className={`flex items-center ${hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>Uppercase letter</span>
+                </div>
+                <div className={`flex items-center ${hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>Lowercase letter</span>
+                </div>
+                <div className={`flex items-center ${hasNumber ? 'text-green-600' : 'text-gray-500'}`}>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>Number</span>
+                </div>
+                <div className={`flex items-center ${hasSpecialChar ? 'text-green-600' : 'text-gray-500'}`}>
+                  <Check className="h-4 w-4 mr-1" />
+                  <span>Special character</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Confirm Password
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={`pl-10 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                  confirmPassword && !doPasswordsMatch ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Confirm your password"
+                required
+              />
+            </div>
+            {confirmPassword && !doPasswordsMatch && (
+              <p className="mt-1 text-sm text-red-600">Passwords do not match</p>
+            )}
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="terms"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="terms" className="ml-2 block text-sm text-gray-600">
+              I accept the{' '}
+              <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-700">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-700">
+                Privacy Policy
+              </Link>
+            </label>
           </div>
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2"
+            disabled={loading || !isPasswordValid || !doPasswordsMatch || !acceptTerms}
+            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <span>Continue</span>
+                <span>Create Account</span>
                 <ArrowRight className="h-5 w-5" />
               </>
             )}
@@ -141,23 +238,23 @@ export default function SignupStep({ onComplete, onBack }: Props) {
 
           <div className="mt-6 space-y-4">
             <button
-              onClick={handleGoogleSignup}
-              className="w-full flex items-center justify-center gap-3 bg-white px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-gray-700 hover:bg-gray-50 transition"
+              onClick={fillDemoAccount}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition border border-blue-200"
+            >
+              <Bot className="h-5 w-5" />
+              <span>Try Demo Mode</span>
+            </button>
+
+            <button
+              disabled
+              className="w-full flex items-center justify-center gap-3 bg-gray-100 px-4 py-3 rounded-lg text-gray-500 cursor-not-allowed"
             >
               <img
                 src="https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png"
                 alt="Google"
-                className="w-5 h-5"
+                className="w-5 h-5 opacity-50"
               />
-              Sign up with Google
-            </button>
-
-            <button
-              onClick={fillDemoAccount}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition border border-gray-200"
-            >
-              <Bot className="h-5 w-5 text-gray-600" />
-              <span>Try Demo Mode</span>
+              Sign up with Google (Coming Soon)
             </button>
           </div>
         </div>

@@ -1,8 +1,11 @@
 import React from 'react';
 import { Cpu } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useEbookModal } from '../hooks/useEbookModal';
 
 export default function Footer() {
+  const { openModal } = useEbookModal();
+
   return (
     <footer className="bg-gray-50 border-t border-gray-100">
       <div className="container mx-auto px-4 py-12">
@@ -32,6 +35,14 @@ export default function Footer() {
               <li><Link to="/dashboard" className="text-gray-600 hover:text-blue-600">Demo Dashboard</Link></li>
               <li><a href="#" className="text-gray-600 hover:text-blue-600">Case Studies</a></li>
               <li><a href="#" className="text-gray-600 hover:text-blue-600">FAQs</a></li>
+              <li>
+                <button 
+                  onClick={openModal}
+                  className="text-gray-600 hover:text-blue-600 text-left"
+                >
+                  Free eBook: Lost Clicks
+                </button>
+              </li>
             </ul>
           </div>
           
