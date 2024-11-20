@@ -9,6 +9,7 @@ import AnalysisProgress from './steps/AnalysisProgress';
 import HumanReview from './steps/HumanReview';
 import FinalMeeting from './steps/FinalMeeting';
 import { useNavigate } from 'react-router-dom';
+import { Check } from 'lucide-react';
 
 export type OnboardingData = {
   email: string;
@@ -28,17 +29,17 @@ export type OnboardingData = {
 };
 
 const steps = [
-  'signup',
-  'google',
-  'company',
-  'payment',
-  'meeting',
-  'analysis',
-  'review',
-  'final'
+  { id: 'signup', label: 'Account' },
+  { id: 'google', label: 'Connect' },
+  { id: 'company', label: 'Details' },
+  { id: 'payment', label: 'Payment' },
+  { id: 'meeting', label: 'Schedule' },
+  { id: 'analysis', label: 'Analysis' },
+  { id: 'review', label: 'Review' },
+  { id: 'final', label: 'Complete' }
 ] as const;
 
-type Step = typeof steps[number];
+type Step = typeof steps[number]['id'];
 
 type Props = {
   onCancel: () => void;
@@ -58,22 +59,24 @@ export default function OnboardingFlow({ onCancel }: Props) {
     selectedPlan: 'premium'
   });
 
+  const currentStepIndex = steps.findIndex(step => step.id === currentStep);
+
   const updateData = (newData: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...newData }));
   };
 
   const nextStep = () => {
-    const currentIndex = steps.indexOf(currentStep);
+    const currentIndex = steps.findIndex(step => step.id === currentStep);
     if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
+      setCurrentStep(steps[currentIndex + 1].id);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const previousStep = () => {
-    const currentIndex = steps.indexOf(currentStep);
+    const currentIndex = steps.findIndex(step => step.id === currentStep);
     if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
+      setCurrentStep(steps[currentIndex - 1].id);
     } else {
       onCancel();
     }
@@ -110,30 +113,88 @@ export default function OnboardingFlow({ onCancel }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white pt-20">
       <div className="container mx-auto px-4 py-12">
-        <div className="flex justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            {steps.map((step, index) => (
-              <React.Fragment key={step}>
-                {index > 0 && (
+        {/* Progress Indicator */}
+        <div className="mb-12">
+          {/* Mobile Progress */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium text-gray-600">
+                Step {currentStepIndex + 1} of {steps.length}
+              </span>
+              <span className="text-sm font-medium text-blue-600">
+                {steps[currentStepIndex].label}
+              </span>
+            </div>
+            <div className="relative">
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 -translate-y-1/2" />
+              <div
+                className="absolute top-1/2 left-0 h-0.5 bg-blue-600 -translate-y-1/2 transition-all duration-500"
+                style={{ width: `${(currentStepIndex + 1) * (100 / steps.length)}%` }}
+              />
+              <div className="relative flex justify-between">
+                {steps.map((step, index) => (
                   <div
-                    className={`h-1 w-8 ${
-                      index <= steps.indexOf(currentStep)
-                        ? 'bg-blue-600'
-                        : 'bg-gray-200'
+                    key={step.id}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
+                      index <= currentStepIndex
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 text-gray-400'
                     }`}
-                  />
-                )}
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    index <= steps.indexOf(currentStep)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-600'
-                  }`}
-                >
-                  {index + 1}
-                </div>
-              </React.Fragment>
-            ))}
+                  >
+                    {index < currentStepIndex ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <span className="text-xs">{index + 1}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Progress */}
+          <div className="hidden md:block">
+            <div className="relative">
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-200 -translate-y-1/2" />
+              <div
+                className="absolute top-1/2 left-0 h-0.5 bg-blue-600 -translate-y-1/2 transition-all duration-500"
+                style={{ width: `${(currentStepIndex + 1) * (100 / steps.length)}%` }}
+              />
+              <div className="relative flex justify-between">
+                {steps.map((step, index) => (
+                  <div key={step.id} className="flex flex-col items-center">
+                    <motion.div
+                      initial={false}
+                      animate={{
+                        scale: index === currentStepIndex ? 1.2 : 1,
+                        backgroundColor: index <= currentStepIndex ? '#2563eb' : '#e5e7eb',
+                      }}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 transition-colors duration-300`}
+                    >
+                      {index < currentStepIndex ? (
+                        <Check className="h-4 w-4 text-white" />
+                      ) : (
+                        <span className={`text-sm ${
+                          index <= currentStepIndex ? 'text-white' : 'text-gray-500'
+                        }`}>
+                          {index + 1}
+                        </span>
+                      )}
+                    </motion.div>
+                    <motion.span
+                      initial={false}
+                      animate={{
+                        color: index === currentStepIndex ? '#2563eb' : '#6b7280',
+                        scale: index === currentStepIndex ? 1.05 : 1,
+                      }}
+                      className="text-sm font-medium"
+                    >
+                      {step.label}
+                    </motion.span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
