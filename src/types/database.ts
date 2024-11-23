@@ -58,3 +58,16 @@ export interface Notification {
   read: boolean;
   created_at: string;
 }
+
+export interface Lead {
+  id: string;
+  email: string;
+  source: string;
+  status: 'new' | 'contacted' | 'qualified' | 'converted';
+  metadata: {
+    acceptedTerms: boolean;
+    downloadedEbook: boolean;
+    [key: string]: any;
+  };
+  created_at: string;
+}

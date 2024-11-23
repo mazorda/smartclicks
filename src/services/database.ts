@@ -1,162 +1,96 @@
 import { supabase } from '../lib/supabase';
-import type { User, Company, Campaign, UserSettings, AuditLog, Notification } from '../types/database';
+import type { Database } from '../types/supabase';
 
-// User Services
-export const userServices = {
-  async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+type Lead = Database['public']['Tables']['leads']['Row'];
+type NewLead = Database['public']['Tables']['leads']['Insert'];
 
-    const { data } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
-    return data;
+// Lead Services
+export const leadServices = {
+  async createLead(email: string, source: string = 'ebook'): Promise<Lead> {
+    try {
+      // First check if lead already exists
+      const { data: existingLead, error: fetchError } = await supabase
+        .from('leads')
+        .select('id, email')
+        .eq('email', email)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found"
+        throw new Error(`Failed to check existing lead: ${fetchError.message}`);
+      }
+
+      if (existingLead) {
+        // Update existing lead's metadata
+        const { data, error: updateError } = await supabase
+          .from('leads')
+          .update({
+            metadata: {
+              acceptedTerms: true,
+              downloadedEbook: true,
+              lastInteraction: new Date().toISOString()
+            }
+          })
+          .eq('id', existingLead.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          throw new Error(`Failed to update existing lead: ${updateError.message}`);
+        }
+
+        return data;
+      }
+
+      // Create new lead
+      const newLead: NewLead = {
+        email,
+        source,
+        status: 'new',
+        metadata: {
+          acceptedTerms: true,
+          downloadedEbook: true,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      const { data, error: insertError } = await supabase
+        .from('leads')
+        .insert([newLead])
+        .select()
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') { // Unique violation
+          throw new Error('This email is already registered');
+        }
+        throw new Error(`Failed to create lead: ${insertError.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Failed to create lead: No data returned');
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Database operation failed:', error.message);
+        throw error;
+      }
+      throw new Error('An unexpected error occurred');
+    }
   },
 
-  async updateUser(id: string, updates: Partial<User>) {
+  async getLeads(): Promise<Lead[]> {
     const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-};
-
-// Company Services
-export const companyServices = {
-  async getCompany(id: string) {
-    const { data, error } = await supabase
-      .from('companies')
+      .from('leads')
       .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async updateCompany(id: string, updates: Partial<Company>) {
-    const { data, error } = await supabase
-      .from('companies')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-};
-
-// Campaign Services
-export const campaignServices = {
-  async getCampaigns(accountId: string) {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .eq('account_id', accountId)
-      .order('date', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  async addCampaignData(campaignData: Omit<Campaign, 'id' | 'created_at'>) {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .insert([campaignData])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-};
-
-// Settings Services
-export const settingsServices = {
-  async getUserSettings(userId: string) {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async updateUserSettings(userId: string, updates: Partial<UserSettings>) {
-    const { data, error } = await supabase
-      .from('user_settings')
-      .update(updates)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-};
-
-// Audit Log Services
-export const auditServices = {
-  async logAction(userId: string, action: string, details: any) {
-    const { data, error } = await supabase
-      .from('audit_logs')
-      .insert([{
-        user_id: userId,
-        action,
-        details
-      }])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getAuditLogs(userId: string) {
-    const { data, error } = await supabase
-      .from('audit_logs')
-      .select('*')
-      .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data;
-  }
-};
+    if (error) {
+      console.error('Failed to fetch leads:', error);
+      throw new Error(`Failed to fetch leads: ${error.message}`);
+    }
 
-// Notification Services
-export const notificationServices = {
-  async getNotifications(userId: string) {
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  async markAsRead(notificationId: string) {
-    const { data, error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId)
-      .select()
-      .single();
-
-    if (error) throw error;
     return data;
   }
 };

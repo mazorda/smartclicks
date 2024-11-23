@@ -18,7 +18,7 @@ export default function Hero({ onGetStarted }: Props) {
         <div className="max-w-4xl mx-auto text-center mb-16">
           <div className="inline-flex items-center bg-blue-50 rounded-full px-4 py-2 mb-6">
             <Cpu className="h-5 w-5 text-blue-600 mr-2" />
-            <span className="text-blue-800 font-medium">AI-Powered Google Ads Intelligence</span>
+            <span className="text-blue-800 font-medium">Google Ads Intelligence for CEOs & Marketers</span>
           </div>
 
           <h1 className="text-5xl font-bold mb-8 leading-tight">
@@ -56,17 +56,17 @@ export default function Hero({ onGetStarted }: Props) {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Bot className="h-8 w-8 text-blue-600 mb-4" />
+              <Bot className="h-8 w-8 text-blue-600 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">AI-Powered Analysis</h3>
               <p className="text-gray-600">60% faster analysis with advanced machine learning technology</p>
             </div>
             <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Users className="h-8 w-8 text-blue-600 mb-4" />
+              <Users className="h-8 w-8 text-blue-600 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">Expert Validation</h3>
               <p className="text-gray-600">15+ years of expertise validating every insight</p>
             </div>
             <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Shield className="h-8 w-8 text-blue-600 mb-4" />
+              <Shield className="h-8 w-8 text-blue-600 mx-auto mb-4" />
               <h3 className="font-semibold mb-2">Risk-Free</h3>
               <p className="text-gray-600">30-day money-back guarantee if you're not satisfied</p>
             </div>
