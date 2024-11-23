@@ -3,6 +3,8 @@ import type { Database } from '../types/supabase';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
 type NewLead = Database['public']['Tables']['leads']['Insert'];
+type DomainAudit = Database['public']['Tables']['domain_audits']['Row'];
+type NewDomainAudit = Database['public']['Tables']['domain_audits']['Insert'];
 
 // Lead Services
 export const leadServices = {
@@ -92,5 +94,91 @@ export const leadServices = {
     }
 
     return data;
+  }
+};
+
+// Domain Audit Services
+export const domainAuditServices = {
+  async createDomainAudit(domain: string): Promise<DomainAudit> {
+    try {
+      const webhookUrl = `${process.env.VITE_API_URL}/webhooks/clay-enrichment`;
+      
+      const newAudit: NewDomainAudit = {
+        domain,
+        status: 'pending',
+        enrichment_status: 'pending_enrichment',
+        metadata: {
+          source: 'homepage',
+          timestamp: new Date().toISOString(),
+          webhookUrl,
+          enrichmentAttempts: 0,
+          lastEnrichmentAttempt: null
+        }
+      };
+
+      const { data, error } = await supabase
+        .from('domain_audits')
+        .insert([newAudit])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to create domain audit: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Failed to create domain audit: No data returned');
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Database operation failed:', error.message);
+        throw error;
+      }
+      throw new Error('An unexpected error occurred');
+    }
+  },
+
+  async updateEnrichmentStatus(
+    id: string, 
+    status: 'pending_enrichment' | 'enrichment_started' | 'enrichment_complete' | 'enrichment_failed',
+    clayData?: any
+  ): Promise<DomainAudit> {
+    try {
+      const updates: Partial<DomainAudit> = {
+        enrichment_status: status,
+        metadata: {
+          lastEnrichmentAttempt: new Date().toISOString()
+        }
+      };
+
+      if (clayData) {
+        updates.clay_data = clayData;
+      }
+
+      const { data, error } = await supabase
+        .from('domain_audits')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`Failed to update enrichment status: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Failed to update enrichment status: No data returned');
+      }
+
+      return data;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Database operation failed:', error.message);
+        throw error;
+      }
+      throw new Error('An unexpected error occurred');
+    }
   }
 };

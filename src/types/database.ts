@@ -71,3 +71,56 @@ export interface Lead {
   };
   created_at: string;
 }
+
+export interface Database {
+  public: {
+    Tables: {
+      leads: {
+        Row: Lead;
+        Insert: Partial<Lead>;
+        Update: Partial<Lead>;
+      };
+      domain_audits: {
+        Row: {
+          id: string;
+          domain: string;
+          created_at: string;
+          updated_at: string;
+          status: 'pending' | 'processing' | 'completed' | 'failed';
+          enrichment_status: 'pending' | 'processing' | 'completed' | 'failed';
+          clay_data: any;
+          user_id?: string;
+          metadata: {
+            [key: string]: any;
+          };
+        };
+        Insert: {
+          id?: string;
+          domain: string;
+          created_at?: string;
+          updated_at?: string;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          enrichment_status?: 'pending' | 'processing' | 'completed' | 'failed';
+          clay_data?: any;
+          user_id?: string;
+          metadata?: {
+            [key: string]: any;
+          };
+        };
+        Update: {
+          id?: string;
+          domain?: string;
+          created_at?: string;
+          updated_at?: string;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          enrichment_status?: 'pending' | 'processing' | 'completed' | 'failed';
+          clay_data?: any;
+          user_id?: string;
+          metadata?: {
+            [key: string]: any;
+          };
+        };
+      };
+    };
+  };
+}

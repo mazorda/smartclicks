@@ -1,12 +1,50 @@
-import React from 'react';
-import { ArrowRight, Bot, Users, Shield, Cpu, Calendar } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Bot, Users, Shield, Cpu, Search } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { domainAuditServices } from '../services/database';
 
 type Props = {
   onGetStarted: () => void;
 };
 
 export default function Hero({ onGetStarted }: Props) {
+  const [domain, setDomain] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const validateDomain = (domain: string): boolean => {
+    const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+    return domainRegex.test(domain);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Basic validation
+    if (!domain.trim()) {
+      setError('Please enter a domain');
+      return;
+    }
+
+    if (!validateDomain(domain.trim())) {
+      setError('Please enter a valid domain');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await domainAuditServices.createDomainAudit(domain.trim());
+      toast.success('Domain submitted successfully!');
+      onGetStarted();
+    } catch (err) {
+      console.error('Error submitting domain:', err);
+      toast.error('Failed to submit domain. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="relative pt-24 pb-16 overflow-hidden">
       <div className="absolute inset-0 z-0">
@@ -33,25 +71,47 @@ export default function Hero({ onGetStarted }: Props) {
             and missed opportunities—all validated by experts and delivered within just 7 days.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
-            <button 
-              onClick={onGetStarted}
-              className="w-full sm:w-auto bg-blue-600 text-white px-12 py-4 rounded-lg hover:bg-blue-700 transition flex items-center justify-center group text-lg font-medium relative overflow-hidden"
-            >
-              <span className="relative z-10">Start Your Audit</span>
-              <ArrowRight className="ml-2 h-5 w-5 relative z-10 transform group-hover:translate-x-1 transition" />
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 transform group-hover:scale-110 transition-transform duration-200" />
-            </button>
-            <a 
-              href="https://meet.mazorda.com/30-mins"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto group px-8 py-4 rounded-lg transition flex items-center justify-center border border-gray-200 hover:border-blue-200 bg-white hover:bg-blue-50 text-gray-600 hover:text-blue-600"
-            >
-              <Calendar className="h-5 w-5 mr-2" />
-              Schedule a Free Consultation
-              <ArrowRight className="ml-2 h-5 w-5 opacity-50 transform group-hover:translate-x-1 transition" />
-            </a>
+          <div className="max-w-3xl mx-auto mt-8 mb-16">
+            <form onSubmit={handleSubmit} className="relative group">
+              <div 
+                className="absolute -inset-5 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500 animate-glow"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 animate-gradient rounded-2xl" />
+              </div>
+              <div className="relative flex items-center bg-white rounded-xl border border-gray-200/50 shadow-[0_0_30px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center pl-6">
+                  <Search className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="example.com"
+                  value={domain}
+                  onChange={(e) => {
+                    setDomain(e.target.value);
+                    setError('');
+                  }}
+                  className={`flex-1 px-4 py-5 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 ${
+                    error ? 'border-red-300' : ''
+                  }`}
+                />
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`h-full px-10 py-5 bg-[#2563EB] text-white font-medium rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    isLoading 
+                      ? 'opacity-75 cursor-not-allowed'
+                      : 'hover:bg-blue-700'
+                  }`}
+                >
+                  {isLoading ? 'Processing...' : 'GO'}
+                </button>
+              </div>
+              {error && (
+                <div className="absolute -bottom-6 left-0 text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
+            </form>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
