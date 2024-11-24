@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, ArrowRight, Star, Bot, Shield } from 'lucide-react';
+import { Check, ArrowRight, Star, Shield } from 'lucide-react';
 
 type Props = {
   onGetStarted: () => void;
@@ -30,7 +30,7 @@ const features = [
   },
   {
     text: "90-Days Free Access to MiaAI",
-    description: "Your 24/7 Marketing Intelligence Assistant (Coming Soon)",
+    description: "Your 24/7 Google Ads Intelligence Assistant",
     comingSoon: true
   }
 ];
@@ -140,34 +140,6 @@ export default function Pricing({ onGetStarted }: Props) {
                 <span>30-Day Money Back Guarantee - Not satisfied? Get a full refund</span>
               </div>
             </div>
-          </div>
-
-          {/* Meet MiaAI Section */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-12">
-            <div className="flex items-center space-x-4 mb-6">
-              <img
-                src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=150"
-                alt="MiaAI"
-                className="w-12 h-12 rounded-full border-2 border-blue-200"
-              />
-              <div>
-                <h4 className="text-lg font-semibold">Meet MiaAI - Your Marketing Intelligence Assistant</h4>
-                <p className="text-blue-600">Coming in 90 days</p>
-              </div>
-            </div>
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-gray-700">
-                Get 90-days free access to MiaAI, your personal AI assistant who understands your Google Ads account inside out. 
-                Ask questions, get insights, and implement optimizations - all through a simple chat interface.
-              </p>
-            </div>
-            <button
-              disabled
-              className="mt-4 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg transition flex items-center cursor-not-allowed"
-            >
-              <Bot className="h-4 w-4 mr-2" />
-              Coming Soon
-            </button>
           </div>
 
           {/* Testimonials */}
