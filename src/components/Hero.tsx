@@ -11,6 +11,7 @@ export default function Hero({ onGetStarted }: Props) {
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const validateDomain = (domain: string): boolean => {
     const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
@@ -20,6 +21,7 @@ export default function Hero({ onGetStarted }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    console.log('Starting domain submission...');
 
     // Basic validation
     if (!domain.trim()) {
@@ -27,23 +29,69 @@ export default function Hero({ onGetStarted }: Props) {
       return;
     }
 
-    if (!validateDomain(domain.trim())) {
+    // Remove any protocol and www. from the domain
+    const cleanDomain = domain.trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '');
+
+    if (!validateDomain(cleanDomain)) {
       setError('Please enter a valid domain');
       return;
     }
 
     setIsLoading(true);
     try {
-      await domainAuditServices.createDomainAudit(domain.trim());
-      toast.success('Domain submitted successfully!');
-      onGetStarted();
+      console.log('Submitting domain:', cleanDomain);
+      const result = await domainAuditServices.createDomainAudit(cleanDomain);
+      console.log('Submission successful:', result);
+      setShowSuccess(true);
+      setDomain('');
     } catch (err) {
-      console.error('Error submitting domain:', err);
-      toast.error('Failed to submit domain. Please try again.');
+      console.error('Submission error:', err);
+      
+      // Handle specific error types
+      if (err instanceof Error) {
+        const errorMessage = err.message;
+        console.error('Error details:', {
+          message: errorMessage,
+          stack: err.stack
+        });
+
+        if (errorMessage.includes('permission')) {
+          setError('Database permission error. Please contact support.');
+        } else if (errorMessage.includes('network')) {
+          setError('Network error. Please check your connection.');
+        } else if (errorMessage.includes('duplicate')) {
+          setError('This domain has already been submitted.');
+        } else {
+          setError(`Error: ${errorMessage}`);
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (showSuccess) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white p-8 rounded-xl max-w-md w-full mx-4">
+          <h2 className="text-2xl font-bold text-center mb-4">Starting domain analysis...</h2>
+          <p className="text-gray-600 text-center mb-6">
+            We're preparing your PPC audit report. This may take a few moments.
+          </p>
+          <button
+            onClick={() => setShowSuccess(false)}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative pt-24 pb-16 overflow-hidden">
@@ -90,7 +138,8 @@ export default function Hero({ onGetStarted }: Props) {
                     setDomain(e.target.value);
                     setError('');
                   }}
-                  className={`flex-1 px-4 py-5 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 ${
+                  disabled={isLoading}
+                  className={`flex-1 px-4 py-5 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 disabled:opacity-50 ${
                     error ? 'border-red-300' : ''
                   }`}
                 />

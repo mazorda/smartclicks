@@ -1,4 +1,4 @@
--- Drop existing table if it exists
+-- First, ensure we start fresh
 drop table if exists public.domain_audits;
 
 -- Create domain_audits table
@@ -46,32 +46,27 @@ create trigger set_updated_at
 -- Create index on domain for faster lookups
 create index if not exists domain_audits_domain_idx on public.domain_audits(domain);
 
--- Enable RLS
+-- Reset ownership and enable RLS
+alter table public.domain_audits owner to postgres;
 alter table public.domain_audits enable row level security;
 
--- Grant necessary permissions
+-- Grant basic permissions
 grant usage on schema public to anon, authenticated;
-grant all privileges on public.domain_audits to anon, authenticated;
-grant usage, select on all sequences in schema public to anon, authenticated;
-grant execute on function gen_random_uuid() to anon, authenticated;
+grant all on public.domain_audits to anon, authenticated;
 
--- Create basic policies
-create policy "Enable anonymous domain audit views"
-on public.domain_audits for select
-using (true);
-
-create policy "Enable anonymous domain audit creation"
+-- Create simplified policies that explicitly allow anonymous operations
+create policy "Allow anonymous inserts"
 on public.domain_audits for insert
+to anon, authenticated
 with check (true);
 
+create policy "Allow anonymous reads"
+on public.domain_audits for select
+to anon, authenticated
+using (true);
+
 -- Grant sequence permissions
-grant usage, select on sequence domain_audits_id_seq to anon;
+grant usage, select on all sequences in schema public to anon, authenticated;
 
--- Ensure public schema access
-grant usage on schema public to public;
-
--- Allow public access to the table
-grant all privileges on public.domain_audits to public;
-
--- Make sure the table is owned by the authenticated role
-alter table public.domain_audits owner to authenticated;
+-- Ensure function access
+grant execute on function gen_random_uuid() to anon, authenticated;

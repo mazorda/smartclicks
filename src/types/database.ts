@@ -72,55 +72,59 @@ export interface Lead {
   created_at: string;
 }
 
+export interface DomainAudit {
+  id: string;
+  domain: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  enrichment_status: 'pending' | 'processing' | 'completed' | 'failed';
+  clay_data: any | null;
+  metadata: {
+    source?: string;
+    timestamp?: string;
+    lastAttempt?: string;
+    [key: string]: any;
+  };
+  user_id?: string | null;
+  r1_gads_health_score: number | null;
+  r1_health_score_analysis: string | null;
+  r1_landing_pages: any | null;
+  r1_analysis: string | null;
+  r1_bounce_rate: number | null;
+  r1_traffic_rank: number | null;
+  r1_avg_time_on_site: number | null;
+  r1_total_visits: number | null;
+  r1_paid_visits: number | null;
+  r1_organic_visits: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
       leads: {
         Row: Lead;
-        Insert: Partial<Lead>;
+        Insert: Omit<Lead, 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
         Update: Partial<Lead>;
       };
       domain_audits: {
-        Row: {
-          id: string;
-          domain: string;
-          created_at: string;
-          updated_at: string;
-          status: 'pending' | 'processing' | 'completed' | 'failed';
-          enrichment_status: 'pending' | 'processing' | 'completed' | 'failed';
-          clay_data: any;
-          user_id?: string;
-          metadata: {
-            [key: string]: any;
-          };
-        };
-        Insert: {
+        Row: DomainAudit;
+        Insert: Omit<DomainAudit, 'id' | 'created_at' | 'updated_at'> & {
           id?: string;
-          domain: string;
           created_at?: string;
           updated_at?: string;
-          status?: 'pending' | 'processing' | 'completed' | 'failed';
-          enrichment_status?: 'pending' | 'processing' | 'completed' | 'failed';
-          clay_data?: any;
-          user_id?: string;
-          metadata?: {
-            [key: string]: any;
-          };
         };
-        Update: {
-          id?: string;
-          domain?: string;
-          created_at?: string;
-          updated_at?: string;
-          status?: 'pending' | 'processing' | 'completed' | 'failed';
-          enrichment_status?: 'pending' | 'processing' | 'completed' | 'failed';
-          clay_data?: any;
-          user_id?: string;
-          metadata?: {
-            [key: string]: any;
-          };
-        };
+        Update: Partial<DomainAudit>;
       };
+    };
+    Functions: {
+      [key: string]: any;
+    };
+    Enums: {
+      [key: string]: any;
     };
   };
 }
