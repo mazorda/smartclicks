@@ -97,7 +97,17 @@ export default function Hero({ onGetStarted }: Props) {
     <div className="relative pt-24 pb-16 overflow-hidden">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white" />
-        <div className="absolute inset-0 opacity-[0.15] bg-[radial-gradient(circle_at_1px_1px,#3b82f6_1px,transparent_0)]" style={{ backgroundSize: '24px 24px' }} />
+        {/* Enhanced geometric pattern with animation */}
+        <div 
+          className="absolute inset-0 opacity-[0.15] animate-patternFloat" 
+          style={{
+            backgroundImage: `
+              radial-gradient(circle at 1px 1px, #3b82f6 1px, transparent 0),
+              radial-gradient(circle at 12px 12px, #6366f1 1px, transparent 0)
+            `,
+            backgroundSize: '24px 24px, 48px 48px'
+          }}
+        />
       </div>
 
       <div className="container relative z-10 mx-auto px-4">
@@ -109,7 +119,12 @@ export default function Hero({ onGetStarted }: Props) {
 
           <h1 className="text-5xl font-bold mb-8 leading-tight">
             Are You Confident Your Google Ads Budget{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+            <span 
+              className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-textGradient"
+              style={{
+                backgroundSize: '200% auto'
+              }}
+            >
               Isn't Being Wasted?
             </span>
           </h1>
@@ -122,17 +137,17 @@ export default function Hero({ onGetStarted }: Props) {
           <div className="max-w-3xl mx-auto mt-8 mb-16">
             <form onSubmit={handleSubmit} className="relative group">
               <div 
-                className="absolute -inset-5 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500 animate-glow"
+                className="absolute -inset-5 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-2xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 animate-glow"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 animate-gradient rounded-2xl" />
               </div>
-              <div className="relative flex items-center bg-white rounded-xl border border-gray-200/50 shadow-[0_0_30px_rgba(0,0,0,0.05)]">
+              <div className="relative flex items-center bg-white rounded-xl border border-gray-200/50 shadow-[0_0_30px_rgba(0,0,0,0.05)] group-hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center pl-6">
                   <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
-                  placeholder="example.com"
+                  placeholder="yourcompany.com"
                   value={domain}
                   onChange={(e) => {
                     setDomain(e.target.value);
@@ -160,6 +175,9 @@ export default function Hero({ onGetStarted }: Props) {
                   {error}
                 </div>
               )}
+              <p className="mt-4 text-sm text-gray-500">
+                Free analysis • No credit card required • Get insights within minutes
+              </p>
             </form>
           </div>
 
