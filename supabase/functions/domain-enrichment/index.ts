@@ -16,6 +16,16 @@ function parseNumericValue(value: any): number | null {
   return isNaN(parsed) ? null : parsed;
 }
 
+function extractValue(obj: any, paths: string[]): any {
+  for (const path of paths) {
+    const value = path.split('.').reduce((acc, part) => acc?.[part], obj);
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+  return null;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -37,92 +47,143 @@ serve(async (req: Request) => {
     if (!domain) {
       throw new Error('No domain found in webhook data')
     }
-    console.log('DEBUG - Domain:', domain)
 
-    // Initialize update data
-    const updateData: Record<string, any> = {
+    // Debug logging for field extraction
+    console.log('DEBUG - Field Extraction:', {
+      allKeys: Object.keys(body),
+      topLevelFields: Object.keys(body).filter(key => typeof body[key] === 'object')
+    })
+
+    // Extract health analysis with fallback options
+    const healthAnalysis = extractValue(body, [
+      'r1_healthscore_analysis',
+      'Google Ads Analysis Health Analysis',
+      'healthscore_analysis'
+    ]);
+
+    // Extract landing pages with fallback options
+    const landingPages = extractValue(body, [
+      'Google Ads Analysis.landing_pages',
+      'landing_pages',
+      'r1_landing_pages'
+    ]);
+
+    // Extract company info with fallback options
+    const companySize = extractValue(body, [
+      'Enrich Company.size',
+      'company_size',
+      'size'
+    ]);
+
+    const companyIndustry = extractValue(body, [
+      'Enrich Company.industry',
+      'company_industry',
+      'industry'
+    ]);
+
+    const companyLogoUrl = extractValue(body, [
+      'Enrich Company.logo_url',
+      'company_logo_url',
+      'logo_url'
+    ]);
+
+    // Extract competitor info with fallback options
+    const competitors = extractValue(body, [
+      'Get Competitors in Paid Search.competitors',
+      'competitors'
+    ]);
+
+    const competitorInfo = competitors?.[0] || {};
+
+    // Construct update object with all fields
+    const updateData = {
       enrichment_status: 'completed',
-      updated_at: new Date().toISOString()
-    }
+      updated_at: new Date().toISOString(),
+      clay_data: body,
+      
+      // Health Analysis
+      r1_health_score_analysis: healthAnalysis,
+      r1_gads_health_score: parseNumericValue(extractValue(body, [
+        'Google Ads Analysis Health Score',
+        'health_score'
+      ])),
+      
+      // Analysis and Landing Pages
+      r1_analysis: extractValue(body, [
+        'Google Ads Analysis Findings',
+        'findings',
+        'analysis'
+      ]),
+      r1_landing_pages: landingPages,
+      
+      // Traffic Metrics
+      r1_bounce_rate: parseNumericValue(extractValue(body, [
+        'Get website bounce rate.bounce_rate',
+        'bounce_rate'
+      ])),
+      r1_traffic_rank: parseNumericValue(extractValue(body, [
+        'Get Traffic Analytics.returnObject.traffic_rank',
+        'traffic_rank'
+      ])),
+      r1_avg_time_on_site: parseNumericValue(extractValue(body, [
+        'Get Traffic Analytics.returnObject.average_time_on_site',
+        'average_time_on_site'
+      ])),
+      r1_total_visits: parseNumericValue(extractValue(body, [
+        'Get Traffic Analytics.returnObject.total_visits',
+        'total_visits'
+      ])),
+      r1_organic_visits: parseNumericValue(extractValue(body, [
+        'Get Traffic Analytics.returnObject.visits.organic_search_visits',
+        'search_visits',
+        'organic_visits'
+      ])),
+      r1_paid_visits: parseNumericValue(extractValue(body, [
+        'Paid Visits SEMRush',
+        'paid_visits'
+      ])),
+      
+      // Company Info
+      r1_company_size: companySize,
+      r1_company_industry: companyIndustry,
+      r1_company_logo_url: companyLogoUrl,
+      
+      // Competitor Info
+      r1_competitor_domain: competitorInfo.domain,
+      r1_competitor_gads_cost: parseNumericValue(competitorInfo.monthlyAdwordsCostInUSD)
+    };
 
-    // Google Ads Health Score and Analysis
-    if (body['Google Ads Analysis Health Score'] !== undefined) {
-      const healthScore = parseNumericValue(body['Google Ads Analysis Health Score']);
-      if (healthScore !== null) {
-        updateData.r1_gads_health_score = healthScore;
+    console.log('DEBUG - Extracted Fields:', {
+      healthAnalysis: {
+        value: healthAnalysis,
+        type: typeof healthAnalysis
+      },
+      landingPages: {
+        value: landingPages,
+        type: typeof landingPages
+      },
+      metrics: {
+        bounceRate: updateData.r1_bounce_rate,
+        trafficRank: updateData.r1_traffic_rank,
+        avgTimeOnSite: updateData.r1_avg_time_on_site,
+        totalVisits: updateData.r1_total_visits,
+        organicVisits: updateData.r1_organic_visits,
+        paidVisits: updateData.r1_paid_visits
+      },
+      companyInfo: {
+        size: companySize,
+        industry: companyIndustry,
+        logoUrl: companyLogoUrl
+      },
+      competitorInfo: {
+        domain: competitorInfo.domain,
+        gadsCost: competitorInfo.monthlyAdwordsCostInUSD
       }
-    }
-
-    // Health Analysis Text - Explicit handling with type checking and trimming
-    const healthAnalysis = body['Google Ads Analysis Health Analysis'];
-    console.log('DEBUG - Raw Health Analysis Type:', typeof healthAnalysis);
-    console.log('DEBUG - Raw Health Analysis Value:', healthAnalysis);
-    
-    if (healthAnalysis !== null && healthAnalysis !== undefined) {
-      const analysisText = String(healthAnalysis).trim();
-      if (analysisText.length > 0) {
-        updateData.r1_health_score_analysis = analysisText;
-        console.log('DEBUG - Processed Health Analysis:', analysisText);
-      } else {
-        console.log('DEBUG - Health Analysis was empty after processing');
-      }
-    } else {
-      console.log('DEBUG - Health Analysis was null or undefined');
-    }
-
-    // Competitor Information
-    const competitors = body['Get Competitors in Paid Search']?.competitors;
-    if (competitors?.[0]) {
-      updateData.r1_competitor_domain = competitors[0].domain;
-      updateData.r1_competitor_gads_cost = parseNumericValue(competitors[0].monthlyAdwordsCostInUSD);
-    }
-
-    // Landing Pages
-    if (body['Google Ads Analysis']?.landing_pages) {
-      updateData.r1_landing_pages = body['Google Ads Analysis'].landing_pages;
-    }
-
-    // Domain Analysis
-    if (body['Google Ads Analysis Findings']) {
-      updateData.r1_analysis = body['Google Ads Analysis Findings'];
-    }
-
-    // Traffic Analytics
-    const trafficAnalytics = body['Get Traffic Analytics']?.returnObject;
-    if (trafficAnalytics) {
-      updateData.r1_total_visits = parseNumericValue(trafficAnalytics.total_visits);
-      updateData.r1_organic_visits = parseNumericValue(trafficAnalytics.visits?.organic_search_visits);
-      updateData.r1_traffic_rank = parseNumericValue(trafficAnalytics.traffic_rank);
-      updateData.r1_avg_time_on_site = parseNumericValue(trafficAnalytics.average_time_on_site);
-    }
-
-    // Paid Visits
-    if (body['Paid Visits SEMRush'] !== undefined) {
-      updateData.r1_paid_visits = parseNumericValue(body['Paid Visits SEMRush']);
-    }
-
-    // Bounce Rate
-    if (body['Get website bounce rate']?.bounce_rate !== undefined) {
-      updateData.r1_bounce_rate = parseNumericValue(body['Get website bounce rate'].bounce_rate);
-    }
-
-    // Company Information
-    const companyInfo = body['Enrich Company'];
-    if (companyInfo) {
-      updateData.r1_company_size = companyInfo.size;
-      updateData.r1_company_industry = companyInfo.industry;
-      updateData.r1_company_logo_url = companyInfo.logo_url;
-    }
-
-    // Store the complete Clay response in clay_data
-    updateData.clay_data = body;
-
-    // Log the complete update data before database update
-    console.log('DEBUG - Complete updateData:', JSON.stringify(updateData, null, 2));
+    });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     
-    // Single consolidated update
+    // Single update operation
     const { data: updateResult, error: updateError } = await supabase
       .from('domain_audits')
       .update(updateData)
@@ -134,11 +195,7 @@ serve(async (req: Request) => {
       throw updateError
     }
 
-    // Verify the update result
     console.log('DEBUG - Update result:', JSON.stringify(updateResult, null, 2))
-    if (updateResult?.[0]) {
-      console.log('DEBUG - Health Analysis after update:', updateResult[0].r1_health_score_analysis)
-    }
 
     return new Response(
       JSON.stringify({
