@@ -1,5 +1,5 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0'
+import { serve } from "http/server"
+import { createClient } from "@supabase/supabase-js"
 
 declare const Deno: {
   env: {
@@ -9,6 +9,12 @@ declare const Deno: {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+function parseNumericValue(value: any): number | null {
+  if (value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return isNaN(parsed) ? null : parsed;
+}
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -24,13 +30,14 @@ serve(async (req: Request) => {
 
   try {
     const body = await req.json()
-    console.log('Received webhook data:', JSON.stringify(body, null, 2))
+    console.log('DEBUG - Raw webhook data:', JSON.stringify(body, null, 2))
 
-    // Extract domain - try different possible field names
-    const domain = body.domain || body.Domain || body['Company Domain']
+    // Extract domain
+    const domain = body.domain
     if (!domain) {
       throw new Error('No domain found in webhook data')
     }
+    console.log('DEBUG - Domain:', domain)
 
     // Initialize update data
     const updateData: Record<string, any> = {
@@ -38,32 +45,84 @@ serve(async (req: Request) => {
       updated_at: new Date().toISOString()
     }
 
-    // Map incoming data to our fields, checking various possible field names
-    const fieldMappings = {
-      r1_gads_health_score: ['health_score', 'score', 'Google Ads Analysis Health Score'],
-      r1_health_score_analysis: ['health_score_analysis', 'analysis', 'Google Ads Analysis Score Justification'],
-      r1_landing_pages: ['landing_pages', 'Google Ads Analysis Landing Pages'],
-      r1_analysis: ['analysis', 'findings', 'Google Ads Analysis Findings'],
-      r1_bounce_rate: ['bounce_rate'],
-      r1_traffic_rank: ['traffic_rank'],
-      r1_avg_time_on_site: ['avg_time_on_site', 'average_time_on_site'],
-      r1_total_visits: ['total_visits', 'visits']
-    }
-
-    // Try to find values using different possible field names
-    for (const [dbField, possibleNames] of Object.entries(fieldMappings)) {
-      for (const name of possibleNames) {
-        const value = body[name] || (body.data && body.data[name])
-        if (value !== undefined) {
-          updateData[dbField] = value
-          break
-        }
+    // Google Ads Health Score and Analysis
+    if (body['Google Ads Analysis Health Score'] !== undefined) {
+      const healthScore = parseNumericValue(body['Google Ads Analysis Health Score']);
+      if (healthScore !== null) {
+        updateData.r1_gads_health_score = healthScore;
       }
     }
 
-    console.log('Updating domain audit with data:', JSON.stringify(updateData, null, 2))
+    // Health Analysis Text - Explicit handling with type checking and trimming
+    const healthAnalysis = body['Google Ads Analysis Health Analysis'];
+    console.log('DEBUG - Raw Health Analysis Type:', typeof healthAnalysis);
+    console.log('DEBUG - Raw Health Analysis Value:', healthAnalysis);
+    
+    if (healthAnalysis !== null && healthAnalysis !== undefined) {
+      const analysisText = String(healthAnalysis).trim();
+      if (analysisText.length > 0) {
+        updateData.r1_health_score_analysis = analysisText;
+        console.log('DEBUG - Processed Health Analysis:', analysisText);
+      } else {
+        console.log('DEBUG - Health Analysis was empty after processing');
+      }
+    } else {
+      console.log('DEBUG - Health Analysis was null or undefined');
+    }
+
+    // Competitor Information
+    const competitors = body['Get Competitors in Paid Search']?.competitors;
+    if (competitors?.[0]) {
+      updateData.r1_competitor_domain = competitors[0].domain;
+      updateData.r1_competitor_gads_cost = parseNumericValue(competitors[0].monthlyAdwordsCostInUSD);
+    }
+
+    // Landing Pages
+    if (body['Google Ads Analysis']?.landing_pages) {
+      updateData.r1_landing_pages = body['Google Ads Analysis'].landing_pages;
+    }
+
+    // Domain Analysis
+    if (body['Google Ads Analysis Findings']) {
+      updateData.r1_analysis = body['Google Ads Analysis Findings'];
+    }
+
+    // Traffic Analytics
+    const trafficAnalytics = body['Get Traffic Analytics']?.returnObject;
+    if (trafficAnalytics) {
+      updateData.r1_total_visits = parseNumericValue(trafficAnalytics.total_visits);
+      updateData.r1_organic_visits = parseNumericValue(trafficAnalytics.visits?.organic_search_visits);
+      updateData.r1_traffic_rank = parseNumericValue(trafficAnalytics.traffic_rank);
+      updateData.r1_avg_time_on_site = parseNumericValue(trafficAnalytics.average_time_on_site);
+    }
+
+    // Paid Visits
+    if (body['Paid Visits SEMRush'] !== undefined) {
+      updateData.r1_paid_visits = parseNumericValue(body['Paid Visits SEMRush']);
+    }
+
+    // Bounce Rate
+    if (body['Get website bounce rate']?.bounce_rate !== undefined) {
+      updateData.r1_bounce_rate = parseNumericValue(body['Get website bounce rate'].bounce_rate);
+    }
+
+    // Company Information
+    const companyInfo = body['Enrich Company'];
+    if (companyInfo) {
+      updateData.r1_company_size = companyInfo.size;
+      updateData.r1_company_industry = companyInfo.industry;
+      updateData.r1_company_logo_url = companyInfo.logo_url;
+    }
+
+    // Store the complete Clay response in clay_data
+    updateData.clay_data = body;
+
+    // Log the complete update data before database update
+    console.log('DEBUG - Complete updateData:', JSON.stringify(updateData, null, 2));
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    
+    // Single consolidated update
     const { data: updateResult, error: updateError } = await supabase
       .from('domain_audits')
       .update(updateData)
@@ -71,11 +130,15 @@ serve(async (req: Request) => {
       .select()
 
     if (updateError) {
-      console.error('Database update error:', updateError)
+      console.error('DEBUG - Database update error:', updateError)
       throw updateError
     }
 
-    console.log('Update successful:', JSON.stringify(updateResult, null, 2))
+    // Verify the update result
+    console.log('DEBUG - Update result:', JSON.stringify(updateResult, null, 2))
+    if (updateResult?.[0]) {
+      console.log('DEBUG - Health Analysis after update:', updateResult[0].r1_health_score_analysis)
+    }
 
     return new Response(
       JSON.stringify({
@@ -93,7 +156,7 @@ serve(async (req: Request) => {
     )
 
   } catch (error) {
-    console.error('Error processing webhook:', error)
+    console.error('DEBUG - Error processing webhook:', error)
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Internal server error',
