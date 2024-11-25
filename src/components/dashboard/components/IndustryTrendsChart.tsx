@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { Bot, User, TrendingUp, DollarSign, Calendar } from 'lucide-react';
+import { Bot, User, TrendingUp, DollarSign, Calendar, RefreshCw } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Label } from 'recharts';
+
+interface IndustryTrendsChartProps {
+  loading?: boolean;
+}
 
 interface Annotation {
   date: string;
@@ -89,7 +93,7 @@ const renderAnnotationContent = (annotation: Annotation) => (
   </div>
 );
 
-const IndustryTrendsChart: React.FC = () => {
+const IndustryTrendsChart: React.FC<IndustryTrendsChartProps> = ({ loading }) => {
   const [hoveredAnnotation, setHoveredAnnotation] = useState<string | null>(null);
 
   // Add CSS keyframes for pulse animation
@@ -113,8 +117,11 @@ const IndustryTrendsChart: React.FC = () => {
   return (
     <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
       <style>{pulseAnimation}</style>
-      <h2 className="text-xl font-semibold mb-6">Google Ads Industry Trends - Software & Technology</h2>
-      <div className="h-[500px] w-full">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold">Google Ads Industry Trends - Software & Technology</h2>
+        {loading && <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />}
+      </div>
+      <div className={`h-[500px] w-full transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={industryTrendsData} margin={{ top: 40, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

@@ -82,6 +82,9 @@ export interface DomainAudit {
     source?: string;
     timestamp?: string;
     lastAttempt?: string;
+    retryCount?: number;
+    lastError?: string | null;
+    errorTimestamp?: string;
     [key: string]: any;
   };
   user_id?: string | null;
@@ -95,6 +98,11 @@ export interface DomainAudit {
   r1_total_visits: number | null;
   r1_paid_visits: number | null;
   r1_organic_visits: number | null;
+  r1_company_size: string | null;
+  r1_company_industry: string | null;
+  r1_company_logo_url: string | null;
+  r1_competitor_domain: string | null;
+  r1_competitor_gads_cost: number | null;
   created_at: string;
   updated_at: string;
 }

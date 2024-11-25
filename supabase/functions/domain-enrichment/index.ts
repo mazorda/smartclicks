@@ -7,6 +7,10 @@ declare const Deno: {
   };
 };
 
+interface EnrichmentError extends Error {
+  domain?: string;
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
@@ -38,6 +42,8 @@ serve(async (req: Request) => {
     })
   }
 
+  let currentDomain: string | undefined;
+
   try {
     const body = await req.json()
     console.log('DEBUG - Raw webhook data:', JSON.stringify(body, null, 2))
@@ -47,6 +53,7 @@ serve(async (req: Request) => {
     if (!domain) {
       throw new Error('No domain found in webhook data')
     }
+    currentDomain = domain;
 
     // Debug logging for field extraction
     console.log('DEBUG - Field Extraction:', {
@@ -95,9 +102,30 @@ serve(async (req: Request) => {
 
     const competitorInfo = competitors?.[0] || {};
 
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
+    // First update to mark as processing
+    const { error: processingError } = await supabase
+      .from('domain_audits')
+      .update({
+        enrichment_status: 'processing',
+        updated_at: new Date().toISOString(),
+        metadata: {
+          lastAttempt: new Date().toISOString(),
+          processingStarted: true
+        }
+      })
+      .eq('domain', domain)
+
+    if (processingError) {
+      console.error('DEBUG - Error updating to processing status:', processingError)
+      throw processingError
+    }
+
     // Construct update object with all fields
     const updateData = {
       enrichment_status: 'completed',
+      status: 'completed',
       updated_at: new Date().toISOString(),
       clay_data: body,
       
@@ -150,7 +178,14 @@ serve(async (req: Request) => {
       
       // Competitor Info
       r1_competitor_domain: competitorInfo.domain,
-      r1_competitor_gads_cost: parseNumericValue(competitorInfo.monthlyAdwordsCostInUSD)
+      r1_competitor_gads_cost: parseNumericValue(competitorInfo.monthlyAdwordsCostInUSD),
+
+      // Metadata update
+      metadata: {
+        lastAttempt: new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+        processingCompleted: true
+      }
     };
 
     console.log('DEBUG - Extracted Fields:', {
@@ -181,9 +216,7 @@ serve(async (req: Request) => {
       }
     });
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-    
-    // Single update operation
+    // Final update with enriched data
     const { data: updateResult, error: updateError } = await supabase
       .from('domain_audits')
       .update(updateData)
@@ -192,6 +225,21 @@ serve(async (req: Request) => {
 
     if (updateError) {
       console.error('DEBUG - Database update error:', updateError)
+      
+      // Update status to failed
+      await supabase
+        .from('domain_audits')
+        .update({
+          enrichment_status: 'failed',
+          status: 'failed',
+          metadata: {
+            lastError: updateError.message,
+            errorTimestamp: new Date().toISOString(),
+            processingFailed: true
+          }
+        })
+        .eq('domain', domain)
+      
       throw updateError
     }
 
@@ -214,10 +262,33 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('DEBUG - Error processing webhook:', error)
+    
+    // Attempt to update status to failed
+    if (error instanceof Error) {
+      try {
+        const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        await supabase
+          .from('domain_audits')
+          .update({
+            enrichment_status: 'failed',
+            status: 'failed',
+            metadata: {
+              lastError: error.message,
+              errorTimestamp: new Date().toISOString(),
+              processingFailed: true,
+              errorStack: error.stack
+            }
+          })
+          .eq('domain', currentDomain || '')
+      } catch (updateError) {
+        console.error('DEBUG - Failed to update error status:', updateError)
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        stack: error.stack
+        error: error instanceof Error ? error.message : 'Internal server error',
+        stack: error instanceof Error ? error.stack : undefined
       }),
       {
         status: 500,

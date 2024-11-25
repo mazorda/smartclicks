@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import type { User } from '../types/database';
+import type { User } from '@supabase/supabase-js';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -25,7 +26,13 @@ export function useAuth() {
   return { user, loading };
 }
 
-export function useRealtime<T>(
+interface RealtimeRecord {
+  id: string;
+  created_at: string;
+  [key: string]: any;
+}
+
+export function useRealtime<T extends RealtimeRecord>(
   table: string,
   query: any = {},
   deps: any[] = []
@@ -35,6 +42,8 @@ export function useRealtime<T>(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    let subscription: RealtimeChannel;
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -44,7 +53,7 @@ export function useRealtime<T>(
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setData(data);
+        setData(data as T[]);
       } catch (err) {
         setError(err as Error);
       } finally {
@@ -55,7 +64,7 @@ export function useRealtime<T>(
     fetchData();
 
     // Set up realtime subscription
-    const subscription = supabase
+    subscription = supabase
       .channel(`${table}_changes`)
       .on(
         'postgres_changes',
@@ -64,10 +73,10 @@ export function useRealtime<T>(
           if (payload.eventType === 'INSERT') {
             setData(prev => [payload.new as T, ...prev]);
           } else if (payload.eventType === 'DELETE') {
-            setData(prev => prev.filter(item => (item as any).id !== payload.old.id));
+            setData(prev => prev.filter(item => item.id !== (payload.old as T).id));
           } else if (payload.eventType === 'UPDATE') {
             setData(prev => prev.map(item => 
-              (item as any).id === payload.new.id ? payload.new : item
+              item.id === (payload.new as T).id ? (payload.new as T) : item
             ));
           }
         }
