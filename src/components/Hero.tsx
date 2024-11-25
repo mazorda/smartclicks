@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bot, Users, Shield, Cpu, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { domainAuditServices } from '../services/database';
+import RadarAnimation from './common/RadarAnimation';
 
 type Props = {
   onGetStarted: () => void;
@@ -11,7 +12,7 @@ export default function Hero({ onGetStarted }: Props) {
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [showRadar, setShowRadar] = useState(false);
 
   const validateDomain = (domain: string): boolean => {
     const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
@@ -44,7 +45,7 @@ export default function Hero({ onGetStarted }: Props) {
       console.log('Submitting domain:', cleanDomain);
       const result = await domainAuditServices.createDomainAudit(cleanDomain);
       console.log('Submission successful:', result);
-      setShowSuccess(true);
+      setShowRadar(true);
       setDomain('');
     } catch (err) {
       console.error('Submission error:', err);
@@ -74,23 +75,8 @@ export default function Hero({ onGetStarted }: Props) {
     }
   };
 
-  if (showSuccess) {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-8 rounded-xl max-w-md w-full mx-4">
-          <h2 className="text-2xl font-bold text-center mb-4">Starting domain analysis...</h2>
-          <p className="text-gray-600 text-center mb-6">
-            We're preparing your PPC audit report. This may take a few moments.
-          </p>
-          <button
-            onClick={() => setShowSuccess(false)}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
+  if (showRadar) {
+    return <RadarAnimation onComplete={() => setShowRadar(false)} />;
   }
 
   return (
@@ -137,12 +123,12 @@ export default function Hero({ onGetStarted }: Props) {
           <div className="max-w-3xl mx-auto mt-8 mb-16">
             <form onSubmit={handleSubmit} className="relative group">
               <div 
-                className="absolute -inset-5 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-2xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 animate-glow"
+                className="absolute -inset-3 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 animate-glow"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 animate-gradient rounded-2xl" />
               </div>
               <div className="relative flex items-center bg-white rounded-xl border border-gray-200/50 shadow-[0_0_30px_rgba(0,0,0,0.05)] group-hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-center pl-6">
+                <div className="flex items-center pl-4">
                   <Search className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
@@ -154,14 +140,14 @@ export default function Hero({ onGetStarted }: Props) {
                     setError('');
                   }}
                   disabled={isLoading}
-                  className={`flex-1 px-4 py-5 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 disabled:opacity-50 ${
+                  className={`flex-1 px-3 py-4 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 disabled:opacity-50 ${
                     error ? 'border-red-300' : ''
                   }`}
                 />
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`h-full px-10 py-5 bg-[#2563EB] text-white font-medium rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  className={`px-6 py-4 bg-[#2563EB] text-white font-medium rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                     isLoading 
                       ? 'opacity-75 cursor-not-allowed'
                       : 'hover:bg-blue-700'

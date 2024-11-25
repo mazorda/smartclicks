@@ -1,100 +1,17 @@
 import React from 'react';
-import { Building2, Users, Globe2, Target, Zap, ArrowUpRight, Lock, Globe } from 'lucide-react';
+import { Zap, Users, Globe2, Target, ChevronRight, Lock } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import CompanyProfile from './components/CompanyProfile';
+import MetricCard from './components/MetricCard';
+import IndustryTrendsChart from './components/IndustryTrendsChart';
 
-interface MetricCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  locked?: boolean;
-}
-
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, locked }) => (
-  <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300">
-    <div className="flex items-start justify-between">
-      <div className="flex flex-col">
-        <span className="text-gray-400 text-sm">{title}</span>
-        <span className="text-2xl font-bold text-white mt-1">
-          {locked ? '••••' : value}
-        </span>
-      </div>
-      <div className="p-2 bg-gray-700/50 rounded-lg">
-        {icon}
-      </div>
-    </div>
-    {locked && (
-      <div className="absolute inset-0 bg-gray-800/80 backdrop-blur-[2px] rounded-xl flex items-center justify-center">
-        <Lock className="w-5 h-5 text-gray-400" />
-      </div>
-    )}
-  </div>
-);
-
-// Sample data for the Google Ads Industry Trends (Software & Technology)
-const industryTrendsData = [
-  { date: 'Jan 1', avgCPC: 2.8, CTR: 3.2, convRate: 2.1 },
-  { date: 'Jan 8', avgCPC: 2.9, CTR: 3.4, convRate: 2.3 },
-  { date: 'Jan 15', avgCPC: 3.1, CTR: 3.5, convRate: 2.4 },
-  { date: 'Jan 22', avgCPC: 2.7, CTR: 3.3, convRate: 2.2 },
-  { date: 'Jan 29', avgCPC: 3.0, CTR: 3.6, convRate: 2.5 },
-  { date: 'Feb 5', avgCPC: 3.2, CTR: 3.7, convRate: 2.6 },
-  { date: 'Feb 12', avgCPC: 3.3, CTR: 3.8, convRate: 2.7 },
-];
-
-export default function AuditDashboard() {
+const AuditDashboard: React.FC = () => {
   useTheme();
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       {/* Company Profile */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-8 border border-gray-700/50">
-        <div className="flex flex-col gap-4">
-          {/* Header with Logo and Company Name */}
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-white p-2 flex-shrink-0 border border-gray-700/50">
-              <img 
-                src="https://s3.amazonaws.com/media.mixrank.com/hero-img/051dcd648d2e086ba34a8d68d3009754" 
-                alt="Company Logo"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://via.placeholder.com/48?text=HG';
-                }}
-              />
-            </div>
-            <h1 className="text-2xl font-bold">HyperGrowth Partners</h1>
-          </div>
-
-          {/* Company Details */}
-          <div className="border-t border-gray-700/50 pt-4">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Globe className="w-4 h-4" />
-                <span className="text-sm">hypergrowthpartners.com</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <Users className="w-4 h-4" />
-                <span className="text-sm">50-200 employees</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <Globe2 className="w-4 h-4" />
-                <span className="text-sm">United States</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <Building2 className="w-4 h-4" />
-                <span className="text-sm">Software & Technology</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="border-t border-gray-700/50 pt-4">
-            <p className="text-gray-300 text-base leading-relaxed">
-              The website hypergrowthpartners.com shows a strong foundation for Google Ads due to its clear service offerings and effective calls-to-action. However, a complete evaluation of its optimization for Google Ads is limited by the lack of detailed information regarding meta descriptions, header tags, and structured data. The overall user experience and navigation are positive, but the absence of specific SEO elements and mobile responsiveness impacts the score. Therefore, while the website has potential, the incomplete data prevents a higher score.
-            </p>
-          </div>
-        </div>
-      </div>
+      <CompanyProfile />
 
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -144,12 +61,15 @@ export default function AuditDashboard() {
         </div>
 
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-          <h2 className="text-xl font-semibold mb-4">Competitor Analysis</h2>
+          <h2 className="text-xl font-semibold mb-4">Competitor Analysis - Google Ads Monthly Spent</h2>
           <div className="space-y-4">
             <div className="p-3 bg-gray-700/50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-gray-300">CompetitorA</span>
-                <span className="text-purple-400 font-semibold">$15,000/mo</span>
+                <span className="text-gray-300">Peak.capital</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-400 font-semibold">$15,000/mo</span>
+                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                </div>
               </div>
             </div>
             {[
@@ -162,7 +82,10 @@ export default function AuditDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">{competitor.name}</span>
-                  <span className="text-purple-400 font-semibold">{competitor.budget}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-400 font-semibold">{competitor.budget}</span>
+                    <ChevronRight className="w-4 h-4 text-gray-500" />
+                  </div>
                 </div>
               </div>
             ))}
@@ -178,12 +101,12 @@ export default function AuditDashboard() {
             <MetricCard
               title="Bounce Rate"
               value="32%"
-              icon={<ArrowUpRight className="w-5 h-5 text-red-400" />}
+              icon={<Target className="w-5 h-5 text-red-400" />}
             />
             <MetricCard
               title="Avg. Time on Site"
               value="4:32"
-              icon={<ArrowUpRight className="w-5 h-5 text-green-400" />}
+              icon={<Target className="w-5 h-5 text-green-400" />}
             />
             <MetricCard
               title="Conversion Rate"
@@ -230,76 +153,10 @@ export default function AuditDashboard() {
         </div>
       </div>
 
-      {/* Google Ads Industry Trends Chart */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-        <h2 className="text-xl font-semibold mb-6">Google Ads Industry Trends - Software & Technology</h2>
-        <div className="h-[400px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={industryTrendsData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="date" 
-                stroke="#9CA3AF"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis 
-                stroke="#9CA3AF"
-                style={{ fontSize: '12px' }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: '1px solid #374151',
-                  borderRadius: '0.5rem',
-                }}
-                labelStyle={{ color: '#9CA3AF' }}
-                itemStyle={{ color: '#E5E7EB' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="avgCPC"
-                name="Avg. CPC ($)"
-                stroke="#8B5CF6"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 8 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="CTR"
-                name="CTR (%)"
-                stroke="#10B981"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 8 }}
-              />
-              <Line
-                type="monotone"
-                dataKey="convRate"
-                name="Conv. Rate (%)"
-                stroke="#F59E0B"
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex items-center justify-center gap-6 mt-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span className="text-sm text-gray-400">Avg. CPC ($)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-sm text-gray-400">CTR (%)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-            <span className="text-sm text-gray-400">Conv. Rate (%)</span>
-          </div>
-        </div>
-      </div>
+      {/* Industry Trends Chart */}
+      <IndustryTrendsChart />
     </div>
   );
-}
+};
+
+export default AuditDashboard;

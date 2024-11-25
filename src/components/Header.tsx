@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Menu, X, Cpu, ArrowRight, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type Props = {
-  onGetStarted: () => void;
-};
-
-export default function Header({ onGetStarted }: Props) {
+export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const handleGetStarted = () => {
+    // Scroll to top where the hero section is
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <header className="fixed w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-100">
@@ -26,7 +27,7 @@ export default function Header({ onGetStarted }: Props) {
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
             <button 
-              onClick={onGetStarted}
+              onClick={handleGetStarted}
               className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition flex items-center"
             >
               Get Started <ArrowRight className="ml-2 h-4 w-4" />
