@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './DashboardLayout';
-import Overview from './Overview';
 import Meetings from './Meetings';
 import ChatBot from './ChatBot';
+import AuditDashboard from './AuditDashboard';
+import { ThemeProvider } from '../../context/ThemeContext';
 
 export default function Dashboard() {
   // Ensure page starts at top when dashboard loads
@@ -12,12 +13,16 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <DashboardLayout>
-      <Routes>
-        <Route path="/" element={<Overview />} />
-        <Route path="/meetings" element={<Meetings />} />
-        <Route path="/chat" element={<ChatBot />} />
-      </Routes>
-    </DashboardLayout>
+    <ThemeProvider>
+      <DashboardLayout>
+        <Routes>
+          {/* Redirect root to audit */}
+          <Route path="/" element={<AuditDashboard />} />
+          <Route path="/meetings" element={<Meetings />} />
+          <Route path="/chat" element={<ChatBot />} />
+          <Route path="/audit" element={<Navigate to="/" replace />} />
+        </Routes>
+      </DashboardLayout>
+    </ThemeProvider>
   );
 }
