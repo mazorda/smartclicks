@@ -64,11 +64,13 @@ create policy "Enable anonymous domain audit creation"
 on public.domain_audits for insert
 with check (true);
 
+create policy "Enable anonymous domain audit updates"
+on public.domain_audits for update
+using (true)
+with check (true);
+
 -- Ensure public schema access
 grant usage on schema public to public;
 
 -- Allow public access to the table
 grant all privileges on public.domain_audits to public;
-
--- Make sure the table is owned by the authenticated role
-alter table public.domain_audits owner to authenticated;

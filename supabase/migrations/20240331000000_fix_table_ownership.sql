@@ -1,21 +1,30 @@
+-- Change table ownership to postgres
+alter table public.domain_audits owner to postgres;
+
+-- Ensure RLS is enabled
+alter table public.domain_audits enable row level security;
+
 -- Drop existing policies
 drop policy if exists "Enable anonymous domain audit views" on public.domain_audits;
 drop policy if exists "Enable anonymous domain audit creation" on public.domain_audits;
-drop policy if exists "anon_update_policy" on public.domain_audits;
-drop policy if exists "anon_insert_policy" on public.domain_audits;
-drop policy if exists "anon_select_policy" on public.domain_audits;
+drop policy if exists "enable_anonymous_read" on public.domain_audits;
+drop policy if exists "enable_anonymous_insert" on public.domain_audits;
+drop policy if exists "enable_anonymous_update" on public.domain_audits;
 
--- Create simple, permissive policies for anonymous users
+-- Create comprehensive policies for anonymous access
 create policy "enable_anonymous_read"
 on public.domain_audits for select
+to anon
 using (true);
 
 create policy "enable_anonymous_insert"
 on public.domain_audits for insert
+to anon
 with check (true);
 
 create policy "enable_anonymous_update"
 on public.domain_audits for update
+to anon
 using (true)
 with check (true);
 
@@ -35,13 +44,3 @@ grant usage on schema public to authenticated;
 grant all on public.domain_audits to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 grant execute on function gen_random_uuid() to authenticated;
-
--- Add helpful comments
-comment on policy "enable_anonymous_read" on public.domain_audits is 
-'Allows anonymous users to read all domain audits';
-
-comment on policy "enable_anonymous_insert" on public.domain_audits is 
-'Allows anonymous users to create domain audits';
-
-comment on policy "enable_anonymous_update" on public.domain_audits is 
-'Allows anonymous users to update domain audits';

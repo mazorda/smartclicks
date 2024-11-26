@@ -5,6 +5,7 @@ import Meetings from './Meetings';
 import ChatBot from './ChatBot';
 import AuditDashboard from './AuditDashboard';
 import { ThemeProvider } from '../../context/ThemeContext';
+import ProtectedRoute from '../auth/ProtectedRoute';
 
 export default function Dashboard() {
   // Ensure page starts at top when dashboard loads
@@ -18,8 +19,16 @@ export default function Dashboard() {
         <Routes>
           {/* Redirect root to audit */}
           <Route path="/" element={<AuditDashboard />} />
-          <Route path="/meetings" element={<Meetings />} />
-          <Route path="/chat" element={<ChatBot />} />
+          <Route path="/meetings" element={
+            <ProtectedRoute>
+              <Meetings />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <ChatBot />
+            </ProtectedRoute>
+          } />
           <Route path="/audit" element={<Navigate to="/" replace />} />
         </Routes>
       </DashboardLayout>

@@ -8,6 +8,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import SEO from './components/SEO';
 import EbookBanner from './components/ebook/EbookBanner';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Lazy load components
 const Header = React.lazy(() => import('./components/Header'));
