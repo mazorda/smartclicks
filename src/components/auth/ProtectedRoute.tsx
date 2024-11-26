@@ -1,21 +1,32 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useSupabase';
+import LoadingSpinner from '../common/LoadingSpinner';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requireAuth?: boolean;
+}
+
+export default function ProtectedRoute({ 
+  children, 
+  requireAuth = true 
+}: ProtectedRouteProps) {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
+  // Show loading state while checking authentication
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // Redirect to login if authentication is required but user is not logged in
+  if (requireAuth && !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to dashboard if user is already logged in and tries to access login/signup pages
+  if (!requireAuth && user) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
