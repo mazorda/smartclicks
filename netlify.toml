@@ -4,21 +4,15 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  SECRETS_SCAN_ENABLED = "true"
+  SECRETS_SCAN_OMIT_PATHS = "dist/*"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
 
-# Configure secrets scanning
 [build.processing]
   skip_processing = false
 
 [build.processing.html]
   pretty_urls = true
-
-# Explicitly allow secrets in build output since they're from env vars
-[secrets]
-  SECRETS_SCAN_ENABLED = true
-  # Omit the build output files from secrets scanning
-  SECRETS_SCAN_OMIT_PATHS = ["dist/*"]
-  # Explicitly allow our environment variables
-  SECRETS_SCAN_OMIT_KEYS = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]
 
 # Handle SPA routing
 [[redirects]]
