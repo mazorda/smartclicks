@@ -68,20 +68,33 @@ export const leadServices = {
 class DomainAuditService {
   private config: DomainAuditServiceConfig;
   private pollInterval: number = 2000; // 2 seconds
+  private DATA_FRESHNESS_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
   constructor(config: Partial<DomainAuditServiceConfig> = {}) {
     this.config = { ...DEFAULT_SERVICE_CONFIG, ...config };
   }
 
-  async createDomainAudit(domain: string): Promise<DomainAudit> {
+  async createDomainAudit(domain: string, options: { forceRefresh?: boolean } = {}): Promise<DomainAudit> {
     try {
-      logger.info('Creating domain audit', { domain });
+      logger.info('Creating domain audit', { domain, options });
 
       // Check for existing audit
       const existingAudit = await this.getDomainAudit(domain);
-      if (existingAudit && existingAudit.enrichment_status === 'completed') {
-        logger.info('Using existing completed audit', { domain });
-        return existingAudit;
+      
+      if (existingAudit) {
+        const isStale = Date.now() - new Date(existingAudit.updated_at).getTime() > this.DATA_FRESHNESS_THRESHOLD;
+        
+        // Return existing audit if it's complete and not stale (unless force refresh requested)
+        if (existingAudit.enrichment_status === 'completed' && !isStale && !options.forceRefresh) {
+          logger.info('Using existing completed audit', { domain });
+          return existingAudit;
+        }
+        
+        // Update existing audit if stale or force refresh requested
+        if (isStale || options.forceRefresh) {
+          logger.info('Refreshing existing audit', { domain, isStale, forceRefresh: options.forceRefresh });
+          return this.refreshDomainAudit(existingAudit.id);
+        }
       }
 
       const newAudit: NewDomainAudit = {
@@ -92,7 +105,8 @@ class DomainAuditService {
           source: 'homepage',
           timestamp: generateTimestamp(),
           retryCount: 0,
-          lastError: null
+          lastError: null,
+          refresh_history: []
         },
         clay_data: null,
         user_id: null,
@@ -161,6 +175,59 @@ class DomainAuditService {
       return normalizedData;
     } catch (error) {
       logger.error('Error in createDomainAudit:', { error });
+      throw error;
+    }
+  }
+
+  async refreshDomainAudit(id: string): Promise<DomainAudit> {
+    try {
+      logger.info('Refreshing domain audit', { id });
+
+      // Get current audit to access metadata
+      const { data: currentAudit, error: fetchError } = await supabase
+        .from('domain_audits')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!currentAudit) throw new Error('Audit not found');
+
+      // Prepare refresh history
+      const refreshHistory = currentAudit.metadata?.refresh_history || [];
+      refreshHistory.push({
+        timestamp: generateTimestamp(),
+        previous_status: currentAudit.enrichment_status,
+        reason: 'manual_refresh'
+      });
+
+      // Update the audit
+      const { data, error } = await supabase
+        .from('domain_audits')
+        .update({
+          enrichment_status: 'pending',
+          metadata: {
+            ...currentAudit.metadata,
+            last_refreshed: generateTimestamp(),
+            refresh_history: refreshHistory,
+            refresh_count: (refreshHistory.length || 0) + 1
+          }
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('No data returned from refresh');
+
+      // Start new enrichment process
+      await this.updateEnrichmentStatus(id, 'processing');
+
+      logger.info('Successfully refreshed domain audit', { id });
+
+      return data;
+    } catch (error) {
+      logger.error('Error in refreshDomainAudit:', { error });
       throw error;
     }
   }
@@ -333,6 +400,15 @@ class DomainAuditService {
 
   getPollInterval(): number {
     return this.pollInterval;
+  }
+
+  setDataFreshnessThreshold(days: number) {
+    this.DATA_FRESHNESS_THRESHOLD = days * 24 * 60 * 60 * 1000;
+    logger.info('Updated data freshness threshold', { days });
+  }
+
+  getDataFreshnessThreshold(): number {
+    return this.DATA_FRESHNESS_THRESHOLD / (24 * 60 * 60 * 1000); // Convert back to days
   }
 }
 

@@ -16,6 +16,11 @@ interface DomainAuditState {
   isError: boolean;
   isSuccess: boolean;
   progress: number;
+  isStale: boolean;
+}
+
+interface DomainAuditOptions {
+  forceRefresh?: boolean;
 }
 
 interface DomainAuditActions {
@@ -23,17 +28,9 @@ interface DomainAuditActions {
   retry: () => Promise<void>;
 }
 
-const CACHE_TIME = 30 * 1000; // Reduced to 30 seconds
 const PROCESSING_TIMEOUT = 3 * 60 * 1000; // 3 minutes
 
-interface CacheEntry {
-  data: DomainAudit;
-  timestamp: number;
-}
-
-const cache = new Map<string, CacheEntry>();
-
-export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditActions {
+export function useDomainAudit(domain?: string, options: DomainAuditOptions = {}): DomainAuditState & DomainAuditActions {
   const [state, setState] = useState<DomainAuditState>({
     data: null,
     status: 'idle',
@@ -43,6 +40,7 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
     isError: false,
     isSuccess: false,
     progress: 0,
+    isStale: false
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -52,17 +50,15 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
   const previousDomainRef = useRef<string | undefined>(domain);
   const MAX_RETRIES = 3;
 
-  // Clear cache when domain changes
+  // Reset state when domain changes
   useEffect(() => {
     if (domain !== previousDomainRef.current) {
-      logger.info('Domain changed, clearing cache', { 
+      logger.info('Domain changed, resetting state', { 
         previousDomain: previousDomainRef.current, 
         newDomain: domain 
       });
-      cache.clear();
       previousDomainRef.current = domain;
       
-      // Reset state for new domain
       setState({
         data: null,
         status: 'loading',
@@ -72,6 +68,7 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
         isError: false,
         isSuccess: false,
         progress: 0,
+        isStale: false
       });
     }
   }, [domain]);
@@ -99,9 +96,6 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
           if (payload.eventType === 'UPDATE') {
             const updatedAudit = payload.new as DomainAudit;
             
-            // Clear cache to ensure fresh data
-            cache.delete(domainToWatch);
-            
             setState(prev => {
               // Calculate progress based on enrichment status
               let progress = prev.progress;
@@ -112,6 +106,11 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
                 const currentProgress = prev.progress || 0;
                 progress = Math.min(currentProgress + 10, 90);
               }
+
+              // Check if data is stale
+              const isStale = updatedAudit.updated_at ? 
+                Date.now() - new Date(updatedAudit.updated_at).getTime() > domainAuditServices.getDataFreshnessThreshold() * 24 * 60 * 60 * 1000 
+                : false;
 
               return {
                 data: updatedAudit,
@@ -126,6 +125,7 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
                 isError: updatedAudit.enrichment_status === 'failed',
                 isSuccess: updatedAudit.enrichment_status === 'completed',
                 progress,
+                isStale
               };
             });
 
@@ -152,55 +152,35 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
         error: null,
       }));
 
-      logger.info('Fetching domain audit data', { domain });
-
-      // Check cache first using domain-specific key
-      const cacheKey = domain || 'latest';
-      const cachedData = cache.get(cacheKey);
-      if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TIME) {
-        logger.info('Using cached domain audit data', { domain });
-        setState({
-          data: cachedData.data,
-          status: cachedData.data.enrichment_status === 'completed' ? 'success' : 'processing',
-          error: null,
-          isLoading: false,
-          isProcessing: cachedData.data.enrichment_status === 'processing',
-          isError: false,
-          isSuccess: cachedData.data.enrichment_status === 'completed',
-          progress: cachedData.data.enrichment_status === 'completed' ? 100 : 30,
-        });
-        return;
-      }
+      logger.info('Fetching domain audit data', { domain, options });
 
       let data: DomainAudit | null = null;
       if (domain) {
-        data = await domainAuditServices.getDomainAudit(domain);
+        data = await domainAuditServices.createDomainAudit(domain, {
+          forceRefresh: options.forceRefresh
+        });
         
-        // If no existing audit found, create a new one
-        if (!data) {
-          data = await domainAuditServices.createDomainAudit(domain);
-          
-          // Immediately set processing state
+        // Immediately set processing state
+        setState(prev => ({
+          ...prev,
+          data,
+          status: 'processing',
+          isLoading: false,
+          isProcessing: true,
+          progress: 10,
+          isStale: false
+        }));
+        
+        // Set up processing timeout
+        processingTimeoutRef.current = setTimeout(() => {
           setState(prev => ({
             ...prev,
-            data,
-            status: 'processing',
-            isLoading: false,
-            isProcessing: true,
-            progress: 10,
+            status: 'error',
+            error: new Error('Processing timeout exceeded'),
+            isProcessing: false,
+            isError: true,
           }));
-          
-          // Set up processing timeout
-          processingTimeoutRef.current = setTimeout(() => {
-            setState(prev => ({
-              ...prev,
-              status: 'error',
-              error: new Error('Processing timeout exceeded'),
-              isProcessing: false,
-              isError: true,
-            }));
-          }, PROCESSING_TIMEOUT);
-        }
+        }, PROCESSING_TIMEOUT);
       } else {
         data = await domainAuditServices.getLatestDomainAudit();
       }
@@ -210,11 +190,8 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
       }
 
       if (data) {
-        // Update cache with domain-specific key
-        cache.set(cacheKey, {
-          data,
-          timestamp: Date.now(),
-        });
+        const isStale = Date.now() - new Date(data.updated_at).getTime() > 
+          domainAuditServices.getDataFreshnessThreshold() * 24 * 60 * 60 * 1000;
 
         setState({
           data,
@@ -229,6 +206,7 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
           isError: data.enrichment_status === 'failed',
           isSuccess: data.enrichment_status === 'completed',
           progress: data.enrichment_status === 'completed' ? 100 : 30,
+          isStale
         });
 
         logger.info('Successfully fetched domain audit data', {
@@ -268,21 +246,16 @@ export function useDomainAudit(domain?: string): DomainAuditState & DomainAuditA
         isError: true,
         isSuccess: false,
         progress: 0,
+        isStale: false
       });
     }
-  }, [domain, setupRealtimeSubscription]);
+  }, [domain, options.forceRefresh, setupRealtimeSubscription]);
 
   const refresh = useCallback(async () => {
-    // Clear domain-specific cache and fetch fresh data
-    if (domain) {
-      cache.delete(domain);
-    } else {
-      cache.delete('latest');
-    }
     abortControllerRef.current?.abort();
     abortControllerRef.current = new AbortController();
     await fetchData(abortControllerRef.current.signal);
-  }, [domain, fetchData]);
+  }, [fetchData]);
 
   const retry = useCallback(async () => {
     if (retryCountRef.current >= MAX_RETRIES) {

@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bot, Users, Shield, Cpu, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { domainAuditServices } from '../services/database';
-import RadarAnimation from './common/RadarAnimation';
 
 type Props = {
   onGetStarted: () => void;
 };
 
 export default function Hero({ onGetStarted }: Props) {
+  const navigate = useNavigate();
   const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showRadar, setShowRadar] = useState(false);
 
   const validateDomain = (domain: string): boolean => {
     const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
@@ -43,9 +43,31 @@ export default function Hero({ onGetStarted }: Props) {
     setIsLoading(true);
     try {
       console.log('Submitting domain:', cleanDomain);
-      const result = await domainAuditServices.createDomainAudit(cleanDomain);
-      console.log('Submission successful:', result);
-      setShowRadar(true);
+      
+      // First check if domain exists
+      const existingAudit = await domainAuditServices.getDomainAudit(cleanDomain);
+      
+      if (existingAudit) {
+        // Check if data is stale
+        const isStale = Date.now() - new Date(existingAudit.updated_at).getTime() > 
+          domainAuditServices.getDataFreshnessThreshold() * 24 * 60 * 60 * 1000;
+
+        if (isStale) {
+          console.log('Existing audit is stale, refreshing data...');
+          toast.success('Refreshing existing domain data...', { duration: 3000 });
+          await domainAuditServices.refreshDomainAudit(existingAudit.id);
+        } else {
+          console.log('Using existing audit data');
+          toast.success('Using existing domain analysis...', { duration: 3000 });
+        }
+      } else {
+        console.log('Creating new domain audit');
+        toast.success('Starting new domain analysis...', { duration: 3000 });
+        await domainAuditServices.createDomainAudit(cleanDomain);
+      }
+
+      // Navigate to dashboard immediately in all cases
+      navigate(`/dashboard?domain=${cleanDomain}`);
       setDomain('');
     } catch (err) {
       console.error('Submission error:', err);
@@ -74,10 +96,6 @@ export default function Hero({ onGetStarted }: Props) {
       setIsLoading(false);
     }
   };
-
-  if (showRadar) {
-    return <RadarAnimation onComplete={() => setShowRadar(false)} />;
-  }
 
   return (
     <div className="relative pt-24 pb-16 overflow-hidden">
