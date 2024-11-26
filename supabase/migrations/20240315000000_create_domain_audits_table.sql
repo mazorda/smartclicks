@@ -64,9 +64,6 @@ create policy "Enable anonymous domain audit creation"
 on public.domain_audits for insert
 with check (true);
 
--- Grant sequence permissions
-grant usage, select on sequence domain_audits_id_seq to anon;
-
 -- Ensure public schema access
 grant usage on schema public to public;
 
