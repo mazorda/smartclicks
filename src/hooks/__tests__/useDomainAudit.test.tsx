@@ -1,4 +1,4 @@
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { useDomainAudit } from '../useDomainAudit';
 
 // Example usage in a component:
@@ -79,12 +79,15 @@ describe('useDomainAudit', () => {
 
     (domainAuditServices.getLatestDomainAudit as jest.Mock).mockResolvedValueOnce(mockData);
 
-    const { result, waitForNextUpdate } = renderHook(() => useDomainAudit());
+    const { result } = renderHook(() => useDomainAudit());
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBe(null);
 
-    await waitForNextUpdate();
+    // Wait for the hook to update
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.isSuccess).toBe(true);
@@ -96,9 +99,11 @@ describe('useDomainAudit', () => {
       new TimeoutError('Request timed out')
     );
 
-    const { result, waitForNextUpdate } = renderHook(() => useDomainAudit());
+    const { result } = renderHook(() => useDomainAudit());
 
-    await waitForNextUpdate();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     expect(result.current.isError).toBe(true);
     expect(result.current.error?.message).toBe('Request timed out. Please try again.');
@@ -109,9 +114,11 @@ describe('useDomainAudit', () => {
       new DomainAuditError('Permission denied', 'PERMISSION_DENIED')
     );
 
-    const { result, waitForNextUpdate } = renderHook(() => useDomainAudit());
+    const { result } = renderHook(() => useDomainAudit());
 
-    await waitForNextUpdate();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     expect(result.current.isError).toBe(true);
     expect(result.current.error?.message).toBe('Permission denied');
@@ -132,9 +139,11 @@ describe('useDomainAudit', () => {
       .mockResolvedValueOnce(mockData)
       .mockResolvedValueOnce({ ...mockData, r1_gads_health_score: 95 });
 
-    const { result, waitForNextUpdate } = renderHook(() => useDomainAudit());
+    const { result } = renderHook(() => useDomainAudit());
 
-    await waitForNextUpdate();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     expect(result.current.data?.r1_gads_health_score).toBe(92);
 
@@ -149,9 +158,11 @@ describe('useDomainAudit', () => {
     (domainAuditServices.getLatestDomainAudit as jest.Mock)
       .mockRejectedValue(new Error('Network error'));
 
-    const { result, waitForNextUpdate } = renderHook(() => useDomainAudit());
+    const { result } = renderHook(() => useDomainAudit());
 
-    await waitForNextUpdate();
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
 
     // Attempt retries
     for (let i = 0; i < 4; i++) {
