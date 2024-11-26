@@ -31,7 +31,7 @@ export default function Process() {
   ];
 
   return (
-    <section id="process" className="py-8 bg-gradient-to-br from-gray-50 to-white">
+    <section id="process" className="py-8 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
@@ -43,7 +43,7 @@ export default function Process() {
           
           <div className="relative">
             {/* Vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-blue-100 transform -translate-x-1/2" />
+            <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-blue-100 dark:bg-blue-900 transform -translate-x-1/2" />
             
             <div className="space-y-12">
               {steps.map((step, index) => (
@@ -55,17 +55,17 @@ export default function Process() {
                 >
                   {/* Content */}
                   <div className={`w-1/2 ${index % 2 === 0 ? 'pr-12 text-right' : 'pl-12'}`}>
-                    <div className={`bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1 ${
+                    <div className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition transform hover:-translate-y-1 ${
                       index % 2 === 0 ? 'ml-auto' : 'mr-auto'
                     }`}>
-                      <h3 className="font-semibold mb-2">{step.title}</h3>
-                      <p className="text-gray-600">{step.description}</p>
+                      <h3 className="font-semibold mb-2 dark:text-white">{step.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
                     </div>
                   </div>
 
                   {/* Icon */}
                   <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
-                    <div className="bg-white w-12 h-12 rounded-full border-4 border-blue-100 flex items-center justify-center">
+                    <div className="bg-white dark:bg-gray-800 w-12 h-12 rounded-full border-4 border-blue-100 dark:border-blue-900 flex items-center justify-center">
                       <step.icon className="h-5 w-5 text-blue-600" />
                     </div>
                   </div>

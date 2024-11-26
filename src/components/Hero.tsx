@@ -100,10 +100,10 @@ export default function Hero({ onGetStarted }: Props) {
   return (
     <div className="relative pt-24 pb-16 overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white dark:from-dark-bg-primary dark:to-dark-bg-secondary" />
         {/* Enhanced geometric pattern with animation */}
         <div 
-          className="absolute inset-0 opacity-[0.15] animate-patternFloat" 
+          className="absolute inset-0 opacity-[0.15] dark:opacity-[0.07] animate-patternFloat" 
           style={{
             backgroundImage: `
               radial-gradient(circle at 1px 1px, #3b82f6 1px, transparent 0),
@@ -116,15 +116,15 @@ export default function Hero({ onGetStarted }: Props) {
 
       <div className="container relative z-10 mx-auto px-4">
         <div className="max-w-4xl mx-auto text-center mb-16">
-          <div className="inline-flex items-center bg-blue-50 rounded-full px-4 py-2 mb-6">
-            <Cpu className="h-5 w-5 text-blue-600 mr-2" />
-            <span className="text-blue-800 font-medium">Google Ads Intelligence for CEOs & Marketers</span>
+          <div className="inline-flex items-center bg-blue-50 dark:bg-dark-bg-secondary rounded-full px-4 py-2 mb-6">
+            <Cpu className="h-5 w-5 text-blue-600 dark:text-dark-accent-light mr-2" />
+            <span className="text-blue-800 dark:text-dark-text-primary font-medium">Google Ads Intelligence for CEOs & Marketers</span>
           </div>
 
-          <h1 className="text-5xl font-bold mb-8 leading-tight">
+          <h1 className="text-5xl font-bold mb-8 leading-tight dark:text-dark-text-primary">
             Are You Confident Your Google Ads Budget{' '}
             <span 
-              className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 animate-textGradient"
+              className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 dark:from-dark-accent-light dark:via-dark-accent-base dark:to-dark-accent-light animate-textGradient"
               style={{
                 backgroundSize: '200% auto'
               }}
@@ -133,7 +133,7 @@ export default function Hero({ onGetStarted }: Props) {
             </span>
           </h1>
           
-          <p className="text-xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-xl text-gray-600 dark:text-dark-text-secondary mb-12 max-w-3xl mx-auto leading-relaxed">
             Gain the clarity you need with a comprehensive, AI-powered audit that reveals hidden inefficiencies 
             and missed opportunities—all validated by experts and delivered within just 7 days.
           </p>
@@ -141,13 +141,13 @@ export default function Hero({ onGetStarted }: Props) {
           <div className="max-w-3xl mx-auto mt-8 mb-16">
             <form onSubmit={handleSubmit} className="relative group">
               <div 
-                className="absolute -inset-3 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 rounded-2xl blur-xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 animate-glow"
+                className="absolute -inset-3 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 dark:from-dark-accent-base dark:via-dark-accent-light dark:to-dark-accent-base rounded-2xl blur-xl opacity-30 group-hover:opacity-70 transition-opacity duration-500 animate-glow"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 animate-gradient rounded-2xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-blue-500 via-purple-500 to-blue-600 dark:from-dark-accent-base dark:via-dark-accent-light dark:to-dark-accent-base animate-gradient rounded-2xl" />
               </div>
-              <div className="relative flex items-center bg-white rounded-xl border border-gray-200/50 shadow-[0_0_30px_rgba(0,0,0,0.05)] group-hover:shadow-lg transition-shadow duration-300">
+              <div className="relative flex items-center bg-white dark:bg-dark-bg-secondary rounded-xl border border-gray-200/50 dark:border-dark-bg-primary shadow-[0_0_30px_rgba(0,0,0,0.05)] group-hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center pl-4">
-                  <Search className="h-5 w-5 text-gray-400" />
+                  <Search className="h-5 w-5 text-gray-400 dark:text-dark-text-tertiary" />
                 </div>
                 <input
                   type="text"
@@ -158,48 +158,48 @@ export default function Hero({ onGetStarted }: Props) {
                     setError('');
                   }}
                   disabled={isLoading}
-                  className={`flex-1 px-3 py-4 text-lg text-gray-700 bg-transparent outline-none placeholder-gray-400 disabled:opacity-50 ${
+                  className={`flex-1 px-3 py-4 text-lg text-gray-700 dark:text-dark-text-primary bg-transparent outline-none placeholder-gray-400 dark:placeholder-dark-text-tertiary disabled:opacity-50 ${
                     error ? 'border-red-300' : ''
                   }`}
                 />
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`px-6 py-4 bg-[#2563EB] text-white font-medium rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  className={`px-6 py-4 bg-[#2563EB] dark:bg-dark-accent-base text-white font-medium rounded-r-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-dark-accent-light focus:ring-offset-2 ${
                     isLoading 
                       ? 'opacity-75 cursor-not-allowed'
-                      : 'hover:bg-blue-700'
+                      : 'hover:bg-blue-700 dark:hover:bg-dark-accent-dark'
                   }`}
                 >
                   {isLoading ? 'Processing...' : 'GO'}
                 </button>
               </div>
               {error && (
-                <div className="absolute -bottom-6 left-0 text-red-500 text-sm">
+                <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-sm">
                   {error}
                 </div>
               )}
-              <p className="mt-4 text-sm text-gray-500">
+              <p className="mt-4 text-sm text-gray-500 dark:text-dark-text-tertiary">
                 Free analysis • No credit card required • Get insights within minutes
               </p>
             </form>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Bot className="h-8 w-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">AI-Powered Analysis</h3>
-              <p className="text-gray-600">60% faster analysis with advanced machine learning technology</p>
+            <div className="bg-white/80 dark:bg-dark-bg-secondary backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-bg-primary hover:border-blue-200 dark:hover:border-dark-accent-light transition transform hover:-translate-y-1">
+              <Bot className="h-8 w-8 text-blue-600 dark:text-dark-accent-light mx-auto mb-4" />
+              <h3 className="font-semibold mb-2 dark:text-dark-text-primary">AI-Powered Analysis</h3>
+              <p className="text-gray-600 dark:text-dark-text-secondary">60% faster analysis with advanced machine learning technology</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Users className="h-8 w-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Expert Validation</h3>
-              <p className="text-gray-600">15+ years of expertise validating every insight</p>
+            <div className="bg-white/80 dark:bg-dark-bg-secondary backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-bg-primary hover:border-blue-200 dark:hover:border-dark-accent-light transition transform hover:-translate-y-1">
+              <Users className="h-8 w-8 text-blue-600 dark:text-dark-accent-light mx-auto mb-4" />
+              <h3 className="font-semibold mb-2 dark:text-dark-text-primary">Expert Validation</h3>
+              <p className="text-gray-600 dark:text-dark-text-secondary">15+ years of expertise validating every insight</p>
             </div>
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:border-blue-200 transition transform hover:-translate-y-1">
-              <Shield className="h-8 w-8 text-blue-600 mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Risk-Free</h3>
-              <p className="text-gray-600">30-day money-back guarantee if you're not satisfied</p>
+            <div className="bg-white/80 dark:bg-dark-bg-secondary backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-bg-primary hover:border-blue-200 dark:hover:border-dark-accent-light transition transform hover:-translate-y-1">
+              <Shield className="h-8 w-8 text-blue-600 dark:text-dark-accent-light mx-auto mb-4" />
+              <h3 className="font-semibold mb-2 dark:text-dark-text-primary">Risk-Free</h3>
+              <p className="text-gray-600 dark:text-dark-text-secondary">30-day money-back guarantee if you're not satisfied</p>
             </div>
           </div>
         </div>

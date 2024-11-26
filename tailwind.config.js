@@ -4,6 +4,25 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      colors: {
+        // Dark mode specific colors
+        dark: {
+          bg: {
+            primary: 'rgb(17, 24, 39)', // gray-900
+            secondary: 'rgb(31, 41, 55)', // gray-800
+          },
+          text: {
+            primary: 'rgb(255, 255, 255)', // white
+            secondary: 'rgb(156, 163, 175)', // gray-400
+            tertiary: 'rgb(107, 114, 128)', // gray-500
+          },
+          accent: {
+            light: 'rgb(167, 139, 250)', // purple-400
+            base: 'rgb(124, 58, 237)',   // purple-600
+            dark: 'rgb(109, 40, 217)',   // purple-700
+          }
+        }
+      },
       animation: {
         'textGradient': 'textGradient 3s linear infinite',
         'patternFloat': 'patternFloat 20s linear infinite',
@@ -66,6 +85,20 @@ export default {
             opacity: '1'
           }
         }
+      },
+      transitionProperty: {
+        'colors': 'color, background-color, border-color, text-decoration-color, fill, stroke',
+        'opacity': 'opacity',
+        'shadow': 'box-shadow',
+        'transform': 'transform',
+      },
+      transitionTimingFunction: {
+        'ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
+      },
+      transitionDuration: {
+        '150': '150ms',
+        '200': '200ms',
+        '300': '300ms',
       },
     },
   },

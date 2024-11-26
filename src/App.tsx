@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingScreen from './components/common/LoadingScreen';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import SEO from './components/SEO';
 import EbookBanner from './components/ebook/EbookBanner';
 
@@ -36,12 +37,12 @@ function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-dark-bg-primary">
       <SEO />
       <ErrorBoundary>
         <Suspense fallback={<LoadingScreen />}>
           <EbookBanner />
-          <Header onGetStarted={() => setShowOnboarding(true)} />
+          <Header />
           <main>
             <Hero onGetStarted={() => setShowOnboarding(true)} />
             <HiddenCosts />
@@ -61,47 +62,49 @@ export default function App() {
   return (
     <HelmetProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={
-              <Suspense fallback={<LoadingScreen message="Loading authentication..." />}>
-                <SEO title="Login - SmartClicks.AI" />
-                <Login />
-              </Suspense>
-            } />
-            <Route path="/dashboard/*" element={
-              <Suspense fallback={<LoadingScreen message="Loading dashboard..." />}>
-                <ErrorBoundary>
-                  <SEO title="Dashboard - SmartClicks.AI" />
-                  <Dashboard />
-                </ErrorBoundary>
-              </Suspense>
-            } />
-            <Route path="/sample-report" element={
-              <Suspense fallback={<LoadingScreen message="Loading report..." />}>
-                <ErrorBoundary>
-                  <SEO title="Sample Report - SmartClicks.AI" />
-                  <SampleReport />
-                </ErrorBoundary>
-              </Suspense>
-            } />
-            <Route path="/privacy-policy" element={
-              <Suspense fallback={<LoadingScreen />}>
-                <SEO title="Privacy Policy - SmartClicks.AI" />
-                <PrivacyPolicy />
-              </Suspense>
-            } />
-            <Route path="/terms-of-service" element={
-              <Suspense fallback={<LoadingScreen />}>
-                <SEO title="Terms of Service - SmartClicks.AI" />
-                <TermsOfService />
-              </Suspense>
-            } />
-            <Route path="/" element={<HomePage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-          <Toaster position="top-right" />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={
+                <Suspense fallback={<LoadingScreen message="Loading authentication..." />}>
+                  <SEO title="Login - SmartClicks.AI" />
+                  <Login />
+                </Suspense>
+              } />
+              <Route path="/dashboard/*" element={
+                <Suspense fallback={<LoadingScreen message="Loading dashboard..." />}>
+                  <ErrorBoundary>
+                    <SEO title="Dashboard - SmartClicks.AI" />
+                    <Dashboard />
+                  </ErrorBoundary>
+                </Suspense>
+              } />
+              <Route path="/sample-report" element={
+                <Suspense fallback={<LoadingScreen message="Loading report..." />}>
+                  <ErrorBoundary>
+                    <SEO title="Sample Report - SmartClicks.AI" />
+                    <SampleReport />
+                  </ErrorBoundary>
+                </Suspense>
+              } />
+              <Route path="/privacy-policy" element={
+                <Suspense fallback={<LoadingScreen />}>
+                  <SEO title="Privacy Policy - SmartClicks.AI" />
+                  <PrivacyPolicy />
+                </Suspense>
+              } />
+              <Route path="/terms-of-service" element={
+                <Suspense fallback={<LoadingScreen />}>
+                  <SEO title="Terms of Service - SmartClicks.AI" />
+                  <TermsOfService />
+                </Suspense>
+              } />
+              <Route path="/" element={<HomePage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            <Toaster position="top-right" />
+          </AuthProvider>
+        </ThemeProvider>
       </BrowserRouter>
     </HelmetProvider>
   );

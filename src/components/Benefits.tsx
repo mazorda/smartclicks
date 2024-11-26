@@ -36,17 +36,17 @@ export default function Benefits() {
   ];
 
   return (
-    <section id="benefits" className="py-20 bg-gray-50">
+    <section id="benefits" className="py-20 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Why Choose Our Audit Service</h2>
+          <h2 className="text-3xl font-bold text-center mb-12 dark:text-white">Why Choose Our Audit Service</h2>
           
           <div className="grid md:grid-cols-3 gap-8">
             {benefits.map((benefit, index) => (
-              <div key={index} className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition">
-                <benefit.icon className="h-8 w-8 text-blue-600 mb-4" />
-                <h3 className="font-semibold mb-2">{benefit.title}</h3>
-                <p className="text-gray-600">{benefit.description}</p>
+              <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md transition dark:shadow-gray-800">
+                <benefit.icon className="h-8 w-8 text-blue-600 dark:text-blue-400 mb-4" />
+                <h3 className="font-semibold mb-2 dark:text-white">{benefit.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300">{benefit.description}</p>
               </div>
             ))}
           </div>
