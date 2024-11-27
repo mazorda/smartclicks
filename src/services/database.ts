@@ -138,6 +138,9 @@ class DomainAuditService {
         if (error.code === '42501') {
           throw new DomainAuditError('Permission denied. Please try again later.', 'PERMISSION_DENIED', error);
         }
+        if (error.code === '23505') {
+          throw new DomainAuditError('This domain has already been submitted.', 'DUPLICATE_DOMAIN', error);
+        }
         throw new DomainAuditError('Failed to create domain audit', 'CREATE_FAILED', error);
       }
 

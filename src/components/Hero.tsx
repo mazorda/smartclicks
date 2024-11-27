@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Users, Shield, Cpu, Search } from 'lucide-react';
-import toast from 'react-hot-toast';
-import { domainAuditServices } from '../services/database';
+import { toast } from 'sonner';
+import { useDomainAudit } from '../hooks/useDomainAudit';
 
 type Props = {
   onGetStarted: () => void;
@@ -11,8 +11,7 @@ type Props = {
 export default function Hero({ onGetStarted }: Props) {
   const navigate = useNavigate();
   const [domain, setDomain] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { submitDomain, isLoading } = useDomainAudit();
 
   const validateDomain = (domain: string): boolean => {
     const domainRegex = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
@@ -21,12 +20,10 @@ export default function Hero({ onGetStarted }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    console.log('Starting domain submission...');
 
     // Basic validation
     if (!domain.trim()) {
-      setError('Please enter a domain');
+      toast.error('Please enter a domain');
       return;
     }
 
@@ -36,64 +33,29 @@ export default function Hero({ onGetStarted }: Props) {
       .replace(/^www\./, '');
 
     if (!validateDomain(cleanDomain)) {
-      setError('Please enter a valid domain');
+      toast.error('Please enter a valid domain');
       return;
     }
 
-    setIsLoading(true);
+    const toastId = toast.loading('Analyzing domain...');
+
     try {
-      console.log('Submitting domain:', cleanDomain);
-      
-      // First check if domain exists
-      const existingAudit = await domainAuditServices.getDomainAudit(cleanDomain);
-      
-      if (existingAudit) {
-        // Check if data is stale
-        const isStale = Date.now() - new Date(existingAudit.updated_at).getTime() > 
-          domainAuditServices.getDataFreshnessThreshold() * 24 * 60 * 60 * 1000;
-
-        if (isStale) {
-          console.log('Existing audit is stale, refreshing data...');
-          toast.success('Refreshing existing domain data...', { duration: 3000 });
-          await domainAuditServices.refreshDomainAudit(existingAudit.id);
-        } else {
-          console.log('Using existing audit data');
-          toast.success('Using existing domain analysis...', { duration: 3000 });
-        }
-      } else {
-        console.log('Creating new domain audit');
-        toast.success('Starting new domain analysis...', { duration: 3000 });
-        await domainAuditServices.createDomainAudit(cleanDomain);
-      }
-
-      // Navigate to dashboard immediately in all cases
+      await submitDomain(cleanDomain);
+      toast.dismiss(toastId);
+      toast.success('Starting domain analysis...');
       navigate(`/dashboard?domain=${cleanDomain}`);
       setDomain('');
     } catch (err) {
-      console.error('Submission error:', err);
-      
-      // Handle specific error types
+      toast.dismiss(toastId);
       if (err instanceof Error) {
-        const errorMessage = err.message;
-        console.error('Error details:', {
-          message: errorMessage,
-          stack: err.stack
-        });
-
-        if (errorMessage.includes('permission')) {
-          setError('Database permission error. Please contact support.');
-        } else if (errorMessage.includes('network')) {
-          setError('Network error. Please check your connection.');
-        } else if (errorMessage.includes('duplicate')) {
-          setError('This domain has already been submitted.');
+        if (err.message.includes('DUPLICATE_DOMAIN')) {
+          toast.error('This domain has already been submitted');
         } else {
-          setError(`Error: ${errorMessage}`);
+          toast.error(err.message);
         }
       } else {
-        setError('An unexpected error occurred. Please try again.');
+        toast.error('An unexpected error occurred');
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -101,7 +63,6 @@ export default function Hero({ onGetStarted }: Props) {
     <div className="relative pt-24 pb-16 overflow-hidden">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white dark:from-dark-bg-primary dark:to-dark-bg-secondary" />
-        {/* Enhanced geometric pattern with animation */}
         <div 
           className="absolute inset-0 opacity-[0.15] dark:opacity-[0.07] animate-patternFloat" 
           style={{
@@ -153,14 +114,9 @@ export default function Hero({ onGetStarted }: Props) {
                   type="text"
                   placeholder="yourcompany.com"
                   value={domain}
-                  onChange={(e) => {
-                    setDomain(e.target.value);
-                    setError('');
-                  }}
+                  onChange={(e) => setDomain(e.target.value)}
                   disabled={isLoading}
-                  className={`flex-1 px-3 py-4 text-lg text-gray-700 dark:text-dark-text-primary bg-transparent outline-none placeholder-gray-400 dark:placeholder-dark-text-tertiary disabled:opacity-50 ${
-                    error ? 'border-red-300' : ''
-                  }`}
+                  className="flex-1 px-3 py-4 text-lg text-gray-700 dark:text-dark-text-primary bg-transparent outline-none placeholder-gray-400 dark:placeholder-dark-text-tertiary disabled:opacity-50"
                 />
                 <button
                   type="submit"
@@ -171,14 +127,17 @@ export default function Hero({ onGetStarted }: Props) {
                       : 'hover:bg-blue-700 dark:hover:bg-dark-accent-dark'
                   }`}
                 >
-                  {isLoading ? 'Processing...' : 'GO'}
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Processing</span>
+                    </div>
+                  ) : 'GO'}
                 </button>
               </div>
-              {error && (
-                <div className="absolute -bottom-6 left-0 text-red-500 dark:text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
               <p className="mt-4 text-sm text-gray-500 dark:text-dark-text-tertiary">
                 Free analysis • No credit card required • Get insights within minutes
               </p>
