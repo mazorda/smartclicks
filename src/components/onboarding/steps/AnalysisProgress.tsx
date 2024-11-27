@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Bot, LineChart, Target, Users, ArrowRight, CheckCircle, FileText, AlertCircle, RefreshCw } from 'lucide-react';
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, LineChart, Target, Users, CheckCircle, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 import { useDomainAudit } from '../../../hooks/useDomainAudit';
+import LoadingAnimation from '../../dashboard/components/LoadingAnimation';
 
 type Props = {
   onComplete: () => void;
@@ -13,110 +14,198 @@ type Stage = {
   title: string;
   description: string;
   status: 'pending' | 'active' | 'completed' | 'error';
+  isPremium?: boolean;
+};
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.2 }
+};
+
+const stageTransition = {
+  initial: { opacity: 0, x: -10 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: 10 },
+  transition: { duration: 0.2 }
 };
 
 export default function AnalysisProgress({ onComplete, domain }: Props) {
-  const { data, error, refresh, retry } = useDomainAudit();
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
+  const {
+    data,
+    partialData,
+    error,
+    isLoading,
+    isEnrichmentLoading,
+    progress,
+    isPremium,
+    retry,
+    isProcessing
+  } = useDomainAudit(domain);
 
-  // Calculate estimated time remaining
-  const startTime = data?.metadata?.timestamp ? new Date(data.metadata.timestamp).getTime() : Date.now();
-  const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-  const estimatedTotalTime = 30; // 30 seconds for enrichment
-  const remainingSeconds = Math.max(0, estimatedTotalTime - elapsedSeconds);
+  const prefersReducedMotion = React.useMemo(() => 
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  , []);
 
-  // Define stages based on enrichment_status
-  const stages: Stage[] = [
-    {
-      icon: <Bot className="h-6 w-6" />,
-      title: "AI Analysis",
-      description: "Processing domain data",
-      status: data?.enrichment_status === 'pending' ? 'active' : 'completed'
-    },
-    {
-      icon: <LineChart className="h-6 w-6" />,
-      title: "Data Enrichment",
-      description: "Gathering insights via Clay.com",
-      status: data?.enrichment_status === 'processing' ? 'active' : 
-             data?.enrichment_status === 'completed' ? 'completed' : 'pending'
-    },
-    {
-      icon: <FileText className="h-6 w-6" />,
-      title: "Report Generation",
-      description: "Preparing your dashboard",
-      status: data?.enrichment_status === 'completed' ? 'completed' : 'pending'
+  React.useEffect(() => {
+    if (data?.status === 'completed' && data?.enrichment_status === 'completed') {
+      const delay = prefersReducedMotion ? 0 : 300;
+      setTimeout(onComplete, delay);
     }
-  ];
+  }, [data?.status, data?.enrichment_status, onComplete, prefersReducedMotion]);
 
-  // Calculate overall progress
-  const getProgress = () => {
-    switch (data?.enrichment_status) {
-      case 'pending': return 33;
-      case 'processing': return 66;
-      case 'completed': return 100;
-      default: return 0;
-    }
-  };
+  const startTime = React.useMemo(() => {
+    const timestamp = data?.metadata?.timestamp || partialData?.metadata?.timestamp;
+    return timestamp ? new Date(timestamp).getTime() : Date.now();
+  }, [data?.metadata?.timestamp, partialData?.metadata?.timestamp]);
 
-  useEffect(() => {
-    const pollInterval = setInterval(() => {
-      refresh();
-    }, 2000);
+  const { remainingSeconds, stages } = React.useMemo(() => {
+    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    const estimatedTotalTime = isPremium ? 45 : 30;
+    const remaining = Math.max(0, estimatedTotalTime - elapsedSeconds);
 
-    return () => clearInterval(pollInterval);
-  }, [refresh]);
+    const stagesList: Stage[] = [
+      {
+        icon: <Bot className="h-6 w-6" />,
+        title: "Initial Analysis",
+        description: "Processing domain data",
+        status: !data ? 'pending' :
+                data.status === 'processing' ? 'active' :
+                data.status === 'completed' ? 'completed' : 'error'
+      },
+      {
+        icon: <LineChart className="h-6 w-6" />,
+        title: "Data Enrichment",
+        description: "Gathering insights via Clay.com",
+        status: !data ? 'pending' :
+                data.status !== 'completed' ? 'pending' :
+                data.enrichment_status === 'processing' ? 'active' :
+                data.enrichment_status === 'completed' ? 'completed' : 'pending',
+        isPremium: true
+      },
+      {
+        icon: <Target className="h-6 w-6" />,
+        title: "Health Analysis",
+        description: "Analyzing Google Ads performance",
+        status: !data ? 'pending' :
+                data.status !== 'completed' ? 'pending' :
+                data.enrichment_status === 'completed' && data.r1_gads_health_score ? 'completed' : 'pending',
+        isPremium: true
+      },
+      {
+        icon: <Users className="h-6 w-6" />,
+        title: "Report Generation",
+        description: "Preparing your dashboard",
+        status: !data ? 'pending' :
+                data.status !== 'completed' ? 'pending' :
+                data.enrichment_status === 'completed' ? 'completed' : 'pending'
+      }
+    ];
 
-  useEffect(() => {
-    if (data?.enrichment_status === 'completed') {
-      setTimeout(onComplete, 1000);
-    }
-  }, [data?.enrichment_status, onComplete]);
+    return { remainingSeconds: remaining, stages: stagesList };
+  }, [data, isPremium, startTime]);
 
-  // Handle errors with retry logic
-  const handleRetry = async () => {
-    if (retryCount < MAX_RETRIES) {
-      setRetryCount(prev => prev + 1);
-      await retry();
-    }
-  };
-
-  if (error && retryCount >= MAX_RETRIES) {
+  const renderEarlyInfo = React.useCallback(() => {
+    if (!partialData) return null;
     return (
-      <div className="max-w-2xl mx-auto text-center">
-        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold mb-4">Analysis Error</h2>
-        <p className="text-gray-600 mb-6">
-          We encountered an issue while analyzing {domain}. Please try again later.
-        </p>
-        <button
-          onClick={onComplete}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          Return to Dashboard
-        </button>
+      <motion.div
+        className="bg-gray-50 rounded-lg p-4 mb-6 text-sm"
+        {...fadeInUp}
+      >
+        <h4 className="font-semibold mb-2">Initial Domain Information</h4>
+        <p className="text-gray-600">{partialData.domain}</p>
+        {partialData.metadata?.source && (
+          <p className="text-gray-500 mt-1">Source: {partialData.metadata.source}</p>
+        )}
+      </motion.div>
+    );
+  }, [partialData]);
+
+  if (isLoading && !partialData) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 sm:p-0">
+        <LoadingAnimation />
       </div>
     );
   }
 
-  return (
-    <div className="max-w-2xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+  if (error) {
+    return (
+      <motion.div 
+        className="max-w-2xl mx-auto text-center p-4 sm:p-0"
+        {...fadeInUp}
       >
-        <h2 className="text-3xl font-bold mb-6 text-center">Analyzing {domain}</h2>
+        <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold mb-4">Analysis Error</h2>
+        <p className="text-gray-600 mb-6">
+          We encountered an issue while analyzing {domain}.
+        </p>
+        <div className="space-y-4">
+          <motion.button
+            onClick={() => retry()}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 mx-auto"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Retry Analysis</span>
+          </motion.button>
+          <motion.button
+            onClick={onComplete}
+            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Return to Dashboard
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 sm:p-0">
+      <motion.div
+        initial="initial"
+        animate="animate"
+        exit="exit"
+        variants={fadeInUp}
+      >
+        <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
+          Analyzing {domain}
+          <AnimatePresence>
+            {isPremium && (
+              <motion.span
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className="inline-block ml-2"
+              >
+                <Sparkles className="h-5 w-5 text-yellow-500" />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </h2>
+        
+        <AnimatePresence mode="wait">
+          {renderEarlyInfo()}
+        </AnimatePresence>
+
         <p className="text-gray-600 mb-12 text-center">
           {remainingSeconds > 0 
             ? `Estimated time remaining: ${remainingSeconds} seconds`
             : 'Finalizing analysis...'}
         </p>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
+        <motion.div 
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-8 mb-8"
+          variants={fadeInUp}
+        >
           <div className="flex items-center justify-center mb-8">
             <div className="relative">
-              <svg className="w-32 h-32">
+              <svg className="w-24 sm:w-32 h-24 sm:h-32">
                 <circle
                   className="text-gray-200"
                   strokeWidth="8"
@@ -126,7 +215,7 @@ export default function AnalysisProgress({ onComplete, domain }: Props) {
                   cx="64"
                   cy="64"
                 />
-                <circle
+                <motion.circle
                   className="text-blue-600"
                   strokeWidth="8"
                   strokeLinecap="round"
@@ -137,70 +226,121 @@ export default function AnalysisProgress({ onComplete, domain }: Props) {
                   cy="64"
                   style={{
                     strokeDasharray: '364.425',
-                    strokeDashoffset: 364.425 * (1 - getProgress() / 100),
+                    transformOrigin: '50% 50%',
                     transform: 'rotate(-90deg)',
-                    transformOrigin: '50% 50%'
+                  }}
+                  initial={{ strokeDashoffset: 364.425 }}
+                  animate={{ 
+                    strokeDashoffset: 364.425 * (1 - progress / 100),
+                    transition: { duration: 0.3, ease: "easeInOut" }
                   }}
                 />
               </svg>
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                >
-                  <RefreshCw className="h-12 w-12 text-blue-600" />
-                </motion.div>
+                <AnimatePresence mode="wait">
+                  {isProcessing ? (
+                    <motion.div
+                      key="loading"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      <RefreshCw className="h-8 sm:h-12 w-8 sm:w-12 text-blue-600" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="progress"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="text-xl sm:text-2xl font-bold text-blue-600"
+                    >
+                      {progress}%
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            {stages.map((stage, index) => (
-              <div key={stage.title} className="flex items-center space-x-4">
-                <div className={`
-                  ${stage.status === 'completed' ? 'text-green-500' :
-                    stage.status === 'active' ? 'text-blue-600' :
-                    'text-gray-400'}
-                `}>
-                  {stage.status === 'completed' ? <CheckCircle className="h-6 w-6" /> : stage.icon}
-                </div>
-                <div>
-                  <h3 className="font-semibold">{stage.title}</h3>
-                  <p className="text-sm text-gray-500">{stage.description}</p>
-                </div>
-              </div>
-            ))}
+            <AnimatePresence mode="wait">
+              {stages.map((stage, index) => (
+                <motion.div
+                  key={stage.title}
+                  className="flex items-center space-x-4"
+                  variants={stageTransition}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  custom={index}
+                >
+                  <div className={`
+                    ${stage.status === 'completed' ? 'text-green-500' :
+                      stage.status === 'active' ? 'text-blue-600' :
+                      stage.status === 'error' ? 'text-red-500' :
+                      'text-gray-400'}
+                    relative transition-colors duration-200
+                  `}>
+                    <AnimatePresence mode="wait">
+                      {stage.status === 'completed' ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <CheckCircle className="h-6 w-6" />
+                        </motion.div>
+                      ) : (
+                        stage.icon
+                      )}
+                    </AnimatePresence>
+                    {stage.isPremium && (
+                      <Sparkles className="h-3 w-3 text-yellow-500 absolute -top-1 -right-1" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold flex items-center">
+                      {stage.title}
+                      {stage.isPremium && (
+                        <span className="ml-2 text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
+                          Premium
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-sm text-gray-500">{stage.description}</p>
+                  </div>
+                  <AnimatePresence mode="wait">
+                    {stage.status === 'active' && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        className="w-4 h-4"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        >
+                          <RefreshCw className="h-4 w-4 text-blue-600" />
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
-        </div>
+        </motion.div>
 
-        {error && retryCount < MAX_RETRIES && (
-          <div className="text-center mb-8">
-            <button
-              onClick={handleRetry}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2 mx-auto"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span>Retry Analysis</span>
-            </button>
-            <p className="text-sm text-gray-500 mt-2">
-              Attempt {retryCount + 1} of {MAX_RETRIES}
-            </p>
-          </div>
-        )}
-
-        <div className="flex justify-center">
-          <button
-            onClick={onComplete}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center space-x-2"
-          >
-            <span>Skip to Dashboard</span>
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        <p className="text-sm text-gray-500 text-center mt-8">
-          We'll notify you once the analysis is complete.
-        </p>
+        <motion.p 
+          className="text-sm text-gray-500 text-center mt-8"
+          variants={fadeInUp}
+        >
+          {isEnrichmentLoading 
+            ? "Gathering additional insights..."
+            : "We'll notify you once the analysis is complete."}
+        </motion.p>
       </motion.div>
     </div>
   );

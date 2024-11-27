@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Zap, Users, Globe2, Target, ChevronRight, Lock, RefreshCw, ArrowRight } from 'lucide-react';
+import { Zap, Users, Globe2, Target, Lock, RefreshCw, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useSupabase';
 import CompanyProfile from './components/CompanyProfile';
@@ -8,6 +8,7 @@ import MetricCard from './components/MetricCard';
 import IndustryTrendsChart from './components/IndustryTrendsChart';
 import { useDomainAudit } from '../../hooks/useDomainAudit';
 import LoadingAnimation from './components/LoadingAnimation';
+import AnalysisProgress from '../onboarding/steps/AnalysisProgress';
 import { logger } from '../../services/logger';
 
 const AuditDashboard: React.FC = () => {
@@ -15,7 +16,7 @@ const AuditDashboard: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const searchParams = new URLSearchParams(location.search);
-  const domain = searchParams.get('domain');
+  const domainParam = searchParams.get('domain');
 
   const { 
     data: auditData, 
@@ -24,15 +25,19 @@ const AuditDashboard: React.FC = () => {
     isError, 
     error,
     retry,
-    progress
-  } = useDomainAudit(domain || undefined);
+    progress,
+    isDemoMode,
+    isNewCompany,
+    isExistingCompany,
+    refresh
+  } = useDomainAudit(domainParam || undefined);
 
   // Log any errors that occur
   React.useEffect(() => {
     if (isError && error) {
-      logger.error('Error in AuditDashboard:', { error, domain });
+      logger.error('Error in AuditDashboard:', { error, domain: domainParam });
     }
-  }, [isError, error, domain]);
+  }, [isError, error, domainParam]);
 
   if (isLoading) {
     return (
@@ -50,7 +55,7 @@ const AuditDashboard: React.FC = () => {
       <div className="min-h-screen bg-gray-900 text-white p-6 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-400 mb-4">
-            <Target className="w-12 h-12 mx-auto mb-4" />
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
             <p className="text-gray-400 mb-4">{error instanceof Error ? error.message : 'An unexpected error occurred'}</p>
           </div>
@@ -72,8 +77,8 @@ const AuditDashboard: React.FC = () => {
           <Globe2 className="w-12 h-12 mx-auto mb-4 text-gray-400" />
           <h2 className="text-xl font-semibold mb-2">No Data Available</h2>
           <p className="text-gray-400">
-            {domain 
-              ? `No audit data found for ${domain}`
+            {domainParam 
+              ? `No audit data found for ${domainParam}`
               : 'Please submit a domain to analyze'}
           </p>
         </div>
@@ -81,8 +86,20 @@ const AuditDashboard: React.FC = () => {
     );
   }
 
+  // Show analysis progress for new companies
+  if (isNewCompany && domainParam) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-6">
+        <AnalysisProgress 
+          domain={domainParam}
+          onComplete={refresh}
+        />
+      </div>
+    );
+  }
+
   // Show upgrade prompt for anonymous users
-  const UpgradePrompt = () => !user && (
+  const UpgradePrompt = () => !user && !isDemoMode && (
     <div className="mb-8 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 border border-purple-500/20">
       <div className="flex items-center justify-between">
         <div>
@@ -104,10 +121,26 @@ const AuditDashboard: React.FC = () => {
     </div>
   );
 
+  // Show demo mode banner
+  const DemoBanner = () => isDemoMode && (
+    <div className="mb-8 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-xl p-6 border border-blue-500/20">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Demo Dashboard
+          </h3>
+          <p className="text-gray-300">
+            This is a demo view showing sample data. Submit your domain for a real analysis.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       {/* Progress Indicator */}
-      {isProcessing && (
+      {isProcessing && !isDemoMode && (
         <div className="mb-6 bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Analyzing domain data...</span>
@@ -122,10 +155,13 @@ const AuditDashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Demo Banner */}
+      <DemoBanner />
+
       {/* Company Profile */}
       <CompanyProfile 
         domain={auditData.domain}
-        healthScoreAnalysis={auditData.r1_health_score_analysis}
+        healthScoreAnalysis={auditData.r1_health_score_analysis || undefined}
         loading={isProcessing}
       />
 
@@ -139,28 +175,28 @@ const AuditDashboard: React.FC = () => {
           value={auditData.r1_avg_time_on_site ? `${Math.round(auditData.r1_avg_time_on_site)}` : '••••'}
           icon={<Zap className="w-5 h-5 text-green-400" />}
           loading={isProcessing}
-          locked={!user || !auditData.r1_avg_time_on_site}
+          locked={!user && !isDemoMode}
         />
         <MetricCard
           title="Monthly Visitors"
           value={auditData.r1_total_visits ? `${(auditData.r1_total_visits / 1000).toFixed(1)}K` : '••••'}
           icon={<Users className="w-5 h-5 text-purple-400" />}
           loading={isProcessing}
-          locked={!user || !auditData.r1_total_visits}
+          locked={!user && !isDemoMode}
         />
         <MetricCard
           title="Traffic World Rank"
           value={auditData.r1_traffic_rank ? auditData.r1_traffic_rank.toLocaleString() : '••••'}
           icon={<Globe2 className="w-5 h-5 text-blue-400" />}
           loading={isProcessing}
-          locked={!auditData.r1_traffic_rank}
+          locked={!user && !isDemoMode}
         />
         <MetricCard
           title="Google Ads Health Score"
           value={auditData.r1_gads_health_score ? auditData.r1_gads_health_score.toString() : '••••'}
           icon={<Target className="w-5 h-5 text-orange-400" />}
           loading={isProcessing}
-          locked={!auditData.r1_gads_health_score}
+          locked={!user && !isDemoMode}
         />
       </div>
 
@@ -174,8 +210,8 @@ const AuditDashboard: React.FC = () => {
           <div className="space-y-4">
             {auditData.r1_landing_pages && typeof auditData.r1_landing_pages === 'object' ? (
               Object.entries(auditData.r1_landing_pages).slice(0, 3).map(([path, score], i) => (
-                <div key={i} className={`flex items-center justify-between p-3 bg-gray-700/50 rounded-lg ${!user || i > 0 ? 'blur-[2px]' : ''}`}>
-                  {(!user || i > 0) && (
+                <div key={i} className={`flex items-center justify-between p-3 bg-gray-700/50 rounded-lg ${!user && !isDemoMode && i > 0 ? 'blur-[2px]' : ''}`}>
+                  {(!user && !isDemoMode && i > 0) && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Lock className="w-5 h-5 text-gray-400" />
                     </div>
@@ -203,36 +239,36 @@ const AuditDashboard: React.FC = () => {
               value={auditData.r1_total_visits ? auditData.r1_total_visits.toLocaleString() : '••••'}
               icon={<Users className="w-5 h-5 text-blue-400" />}
               loading={isProcessing}
-              locked={!user || !auditData.r1_total_visits}
+              locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Paid Visitors"
               value={auditData.r1_paid_visits ? auditData.r1_paid_visits.toLocaleString() : '••••'}
               icon={<Target className="w-5 h-5 text-purple-400" />}
               loading={isProcessing}
-              locked={!user || !auditData.r1_paid_visits}
+              locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Organic Visitors"
               value={auditData.r1_organic_visits ? auditData.r1_organic_visits.toLocaleString() : '••••'}
               icon={<Globe2 className="w-5 h-5 text-green-400" />}
               loading={isProcessing}
-              locked={!user || !auditData.r1_organic_visits}
+              locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Bounce Rate"
               value={auditData.r1_bounce_rate ? `${auditData.r1_bounce_rate}%` : '••••'}
               icon={<Target className="w-5 h-5 text-orange-400" />}
               loading={isProcessing}
-              locked={!user || !auditData.r1_bounce_rate}
+              locked={!user && !isDemoMode}
             />
           </div>
         </div>
       </div>
 
       {/* Industry Trends Chart */}
-      <div className={`relative ${!user ? 'blur-[2px]' : ''}`}>
-        {!user && (
+      <div className={`relative ${!user && !isDemoMode ? 'blur-[2px]' : ''}`}>
+        {!user && !isDemoMode && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="bg-gray-800/90 px-6 py-4 rounded-lg backdrop-blur-sm border border-gray-700">
               <Lock className="w-6 h-6 text-purple-400 mx-auto mb-2" />

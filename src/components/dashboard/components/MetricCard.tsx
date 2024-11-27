@@ -1,38 +1,62 @@
 import React from 'react';
-import { Lock, RefreshCw } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-export interface MetricCardProps {
+interface MetricCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  locked?: boolean;
   loading?: boolean;
+  locked?: boolean;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, icon, locked, loading }) => (
-  <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300">
-    <div className="flex items-start justify-between">
-      <div className="flex flex-col">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-sm">{title}</span>
-          {loading && (
-            <RefreshCw className="w-3 h-3 text-purple-400 animate-spin" />
-          )}
+const MetricCard: React.FC<MetricCardProps> = ({
+  title,
+  value,
+  icon,
+  loading = false,
+  locked = false,
+}) => {
+  return (
+    <div className={`
+      relative rounded-xl p-6 h-full
+      ${locked ? 'bg-gradient-to-br from-purple-900/50 to-blue-900/50 border border-purple-500/20' : 
+                'bg-gray-800/50 border border-gray-700/50'}
+      backdrop-blur-sm transition-all duration-300
+    `}>
+      {loading ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="h-4 w-24 bg-gray-700 rounded animate-pulse" />
+            <div className="h-6 w-6 bg-gray-700 rounded animate-pulse" />
+          </div>
+          <div className="h-8 w-32 bg-gray-700 rounded animate-pulse" />
         </div>
-        <span className={`text-2xl font-bold mt-1 ${loading ? 'text-gray-400' : 'text-white'} transition-colors duration-300`}>
-          {locked ? '••••' : value}
-        </span>
-      </div>
-      <div className={`p-2 rounded-lg ${loading ? 'bg-gray-700/30' : 'bg-gray-700/50'} transition-colors duration-300`}>
-        {icon}
-      </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-300">{title}</h3>
+            <span className="text-gray-400">{icon}</span>
+          </div>
+          <div className="flex items-baseline">
+            <p className={`text-2xl font-semibold ${locked ? 'text-gray-400' : 'text-white'}`}>
+              {value}
+            </p>
+          </div>
+          {locked && (
+            <motion.div 
+              className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-xl backdrop-blur-[1px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Lock className="w-5 h-5 text-purple-400" />
+            </motion.div>
+          )}
+        </>
+      )}
     </div>
-    {locked && !loading && (
-      <div className="absolute inset-0 bg-gray-800/80 backdrop-blur-[2px] rounded-xl flex items-center justify-center">
-        <Lock className="w-5 h-5 text-gray-400" />
-      </div>
-    )}
-  </div>
-);
+  );
+};
 
 export default MetricCard;
