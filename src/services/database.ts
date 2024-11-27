@@ -69,36 +69,59 @@ class DomainAuditService {
   private config: DomainAuditServiceConfig;
   private pollInterval: number = 2000; // 2 seconds
   private DATA_FRESHNESS_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+  private inProgressDomains: Set<string> = new Set();
+  private recentAudits: Map<string, { timestamp: number, id: string }> = new Map();
+  private RECENT_AUDIT_WINDOW = 5000; // 5 second window
 
   constructor(config: Partial<DomainAuditServiceConfig> = {}) {
     this.config = { ...DEFAULT_SERVICE_CONFIG, ...config };
   }
 
   async createDomainAudit(domain: string, options: { forceRefresh?: boolean } = {}): Promise<DomainAudit> {
+    const normalizedDomain = domain.toLowerCase().trim();
+    
+    // Check for in-progress audits
+    if (this.inProgressDomains.has(normalizedDomain)) {
+      logger.info('Domain audit already in progress, skipping duplicate request', { domain: normalizedDomain });
+      return this.getDomainAudit(normalizedDomain) as Promise<DomainAudit>;
+    }
+
+    // Check for recent audits within the window
+    const recent = this.recentAudits.get(normalizedDomain);
+    if (recent && Date.now() - recent.timestamp < this.RECENT_AUDIT_WINDOW) {
+      logger.info('Recent audit found within window, returning existing audit', { 
+        domain: normalizedDomain,
+        auditId: recent.id,
+        age: Date.now() - recent.timestamp
+      });
+      return this.getDomainAudit(normalizedDomain) as Promise<DomainAudit>;
+    }
+
     try {
-      logger.info('Creating domain audit', { domain, options });
+      this.inProgressDomains.add(normalizedDomain);
+      logger.info('Creating domain audit', { domain: normalizedDomain, options });
 
       // Check for existing audit
-      const existingAudit = await this.getDomainAudit(domain);
+      const existingAudit = await this.getDomainAudit(normalizedDomain);
       
       if (existingAudit) {
         const isStale = Date.now() - new Date(existingAudit.updated_at).getTime() > this.DATA_FRESHNESS_THRESHOLD;
         
         // Return existing audit if it's complete and not stale (unless force refresh requested)
         if (existingAudit.enrichment_status === 'completed' && !isStale && !options.forceRefresh) {
-          logger.info('Using existing completed audit', { domain });
+          logger.info('Using existing completed audit', { domain: normalizedDomain });
           return existingAudit;
         }
         
         // Update existing audit if stale or force refresh requested
         if (isStale || options.forceRefresh) {
-          logger.info('Refreshing existing audit', { domain, isStale, forceRefresh: options.forceRefresh });
+          logger.info('Refreshing existing audit', { domain: normalizedDomain, isStale, forceRefresh: options.forceRefresh });
           return this.refreshDomainAudit(existingAudit.id);
         }
       }
 
       const newAudit: NewDomainAudit = {
-        domain: domain.toLowerCase().trim(),
+        domain: normalizedDomain,
         status: 'pending',
         enrichment_status: 'pending',
         metadata: {
@@ -170,6 +193,12 @@ class DomainAuditService {
         throw validation.errors[0];
       }
 
+      // Track this audit in recentAudits
+      this.recentAudits.set(normalizedDomain, {
+        timestamp: Date.now(),
+        id: data.id
+      });
+
       logger.info('Successfully created domain audit', { 
         id: data.id,
         domain: data.domain 
@@ -179,6 +208,15 @@ class DomainAuditService {
     } catch (error) {
       logger.error('Error in createDomainAudit:', { error });
       throw error;
+    } finally {
+      this.inProgressDomains.delete(normalizedDomain);
+      
+      // Clean up old entries from recentAudits
+      for (const [domain, audit] of this.recentAudits.entries()) {
+        if (Date.now() - audit.timestamp > this.RECENT_AUDIT_WINDOW) {
+          this.recentAudits.delete(domain);
+        }
+      }
     }
   }
 
