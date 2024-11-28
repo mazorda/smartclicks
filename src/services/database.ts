@@ -71,33 +71,87 @@ class DomainAuditService {
   private DATA_FRESHNESS_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
   private inProgressDomains: Set<string> = new Set();
   private recentAudits: Map<string, { timestamp: number, id: string }> = new Map();
-  private RECENT_AUDIT_WINDOW = 5000; // 5 second window
+  private readonly RECENT_AUDIT_WINDOW = 5000; // 5 second window
 
   constructor(config: Partial<DomainAuditServiceConfig> = {}) {
     this.config = { ...DEFAULT_SERVICE_CONFIG, ...config };
+    // Set up periodic cleanup
+    setInterval(() => this.cleanupStaleEntries(), this.RECENT_AUDIT_WINDOW);
+  }
+
+  private cleanupStaleEntries(): void {
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    // Cleanup recent audits
+    for (const [domain, data] of this.recentAudits.entries()) {
+      if (now - data.timestamp > this.RECENT_AUDIT_WINDOW) {
+        this.recentAudits.delete(domain);
+        cleanedCount++;
+      }
+    }
+
+    // Cleanup in-progress domains that might have been orphaned
+    for (const domain of this.inProgressDomains) {
+      const recent = this.recentAudits.get(domain);
+      if (!recent || now - recent.timestamp > this.RECENT_AUDIT_WINDOW) {
+        this.inProgressDomains.delete(domain);
+        cleanedCount++;
+      }
+    }
+
+    if (cleanedCount > 0) {
+      logger.debug('Cleaned up stale entries', {
+        cleanedCount,
+        remainingRecent: this.recentAudits.size,
+        remainingInProgress: this.inProgressDomains.size
+      });
+    }
+  }
+
+  private cleanupDomain(domain: string): void {
+    this.recentAudits.delete(domain);
+    this.inProgressDomains.delete(domain);
+    logger.debug('Cleaned up domain entries', { domain });
   }
 
   async createDomainAudit(domain: string, options: { forceRefresh?: boolean } = {}): Promise<DomainAudit> {
+    if (!domain) {
+      throw new ValidationError('Domain is required');
+    }
+
+    this.cleanupStaleEntries(); // Clean up at the start of each request
     const normalizedDomain = domain.toLowerCase().trim();
     
-    // Check for in-progress audits
-    if (this.inProgressDomains.has(normalizedDomain)) {
-      logger.info('Domain audit already in progress, skipping duplicate request', { domain: normalizedDomain });
-      return this.getDomainAudit(normalizedDomain) as Promise<DomainAudit>;
-    }
-
-    // Check for recent audits within the window
-    const recent = this.recentAudits.get(normalizedDomain);
-    if (recent && Date.now() - recent.timestamp < this.RECENT_AUDIT_WINDOW) {
-      logger.info('Recent audit found within window, returning existing audit', { 
-        domain: normalizedDomain,
-        auditId: recent.id,
-        age: Date.now() - recent.timestamp
-      });
-      return this.getDomainAudit(normalizedDomain) as Promise<DomainAudit>;
-    }
-
     try {
+      // Check for in-progress audits
+      if (this.inProgressDomains.has(normalizedDomain)) {
+        logger.info('Domain audit already in progress, skipping duplicate request', { domain: normalizedDomain });
+        return this.getDomainAudit(normalizedDomain) as Promise<DomainAudit>;
+      }
+
+      // Check for recent audits within the window
+      const recent = this.recentAudits.get(normalizedDomain);
+      if (recent && Date.now() - recent.timestamp < this.RECENT_AUDIT_WINDOW) {
+        logger.info('Recent audit found within window', { 
+          domain: normalizedDomain,
+          auditId: recent.id,
+          age: Date.now() - recent.timestamp
+        });
+        
+        // Verify the recent audit still exists
+        const existingAudit = await this.getDomainAudit(normalizedDomain);
+        if (!existingAudit) {
+          logger.warn('Recent audit not found in database, cleaning up tracking', {
+            domain: normalizedDomain,
+            auditId: recent.id
+          });
+          this.cleanupDomain(normalizedDomain);
+        } else {
+          return existingAudit;
+        }
+      }
+
       this.inProgressDomains.add(normalizedDomain);
       logger.info('Creating domain audit', { domain: normalizedDomain, options });
 
@@ -157,7 +211,7 @@ class DomainAuditService {
         .single();
 
       if (error) {
-        logger.error('Supabase error in createDomainAudit:', { error });
+        logger.error('Supabase error in createDomainAudit:', { error, domain: normalizedDomain });
         if (error.code === '42501') {
           throw new DomainAuditError('Permission denied. Please try again later.', 'PERMISSION_DENIED', error);
         }
@@ -188,7 +242,8 @@ class DomainAuditService {
       const validation = validateDomainAudit(normalizedData);
       if (!validation.isValid) {
         logger.error('Validation failed for created domain audit', { 
-          errors: validation.errors 
+          errors: validation.errors,
+          domain: normalizedDomain
         });
         throw validation.errors[0];
       }
@@ -201,22 +256,16 @@ class DomainAuditService {
 
       logger.info('Successfully created domain audit', { 
         id: data.id,
-        domain: data.domain 
+        domain: normalizedDomain
       });
 
       return normalizedData;
     } catch (error) {
-      logger.error('Error in createDomainAudit:', { error });
+      logger.error('Error in createDomainAudit:', { error, domain: normalizedDomain });
+      this.cleanupDomain(normalizedDomain);
       throw error;
     } finally {
       this.inProgressDomains.delete(normalizedDomain);
-      
-      // Clean up old entries from recentAudits
-      for (const [domain, audit] of this.recentAudits.entries()) {
-        if (Date.now() - audit.timestamp > this.RECENT_AUDIT_WINDOW) {
-          this.recentAudits.delete(domain);
-        }
-      }
     }
   }
 
@@ -268,7 +317,7 @@ class DomainAuditService {
 
       return data;
     } catch (error) {
-      logger.error('Error in refreshDomainAudit:', { error });
+      logger.error('Error in refreshDomainAudit:', { error, id });
       throw error;
     }
   }
@@ -293,11 +342,11 @@ class DomainAuditService {
         .eq('id', id);
 
       if (updateError) {
-        logger.error('Failed to update enrichment status:', { updateError });
+        logger.error('Failed to update enrichment status:', { updateError, id, status });
         throw updateError;
       }
     } catch (err) {
-      logger.error('Error updating enrichment status:', { err });
+      logger.error('Error updating enrichment status:', { err, id, status });
       throw err;
     }
   }
@@ -315,7 +364,7 @@ class DomainAuditService {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        logger.error('Supabase error in getDomainAudit:', { error });
+        logger.error('Supabase error in getDomainAudit:', { error, domain });
         throw new DomainAuditError('Failed to fetch domain audit', 'FETCH_FAILED', error);
       }
 
@@ -338,7 +387,8 @@ class DomainAuditService {
       const validation = validateDomainAudit(normalizedData);
       if (!validation.isValid) {
         logger.error('Validation failed for fetched domain audit', { 
-          errors: validation.errors 
+          errors: validation.errors,
+          domain
         });
         throw validation.errors[0];
       }
@@ -352,7 +402,7 @@ class DomainAuditService {
 
       return sanitizeDomainAudit(normalizedData) as DomainAudit;
     } catch (error) {
-      logger.error('Error in getDomainAudit:', { error });
+      logger.error('Error in getDomainAudit:', { error, domain });
       throw error;
     }
   }
