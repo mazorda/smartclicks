@@ -201,7 +201,39 @@ class DomainAuditService {
         r1_company_industry: null,
         r1_company_logo_url: null,
         r1_competitor_domain: null,
-        r1_competitor_gads_cost: null
+        r1_competitor_gads_cost: null,
+        
+        // Clay enrichment fields
+        linkedin_url: null,
+        company_name: null,
+        country: null,
+        city_locality: null,
+        founded_year: null,
+        company_description: null,
+        specialties: null,
+        linkedin_follower_count: null,
+
+        // Competitor fields
+        competitor_1_domain: null,
+        competitor_1_monthly_gads_traffic: null,
+        competitor_1_monthly_adwords_cost: null,
+        competitor_2_domain: null,
+        competitor_2_monthly_gads_traffic: null,
+        competitor_2_monthly_adwords_cost: null,
+
+        // SEMRush metrics
+        semrush_total_visits: null,
+        semrush_traffic_rank: null,
+        semrush_bounce_rate: null,
+        semrush_pages_per_visit: null,
+        semrush_time_on_site: null,
+        semrush_paid_visits: null,
+        semrush_organic_visits: null,
+        semrush_direct_visits: null,
+        semrush_social_visits: null,
+        semrush_mobile_traffic_share: null,
+        semrush_mobile_bounce_rate: null,
+        similarweb_visits: null
       };
 
       const { data, error } = await supabase

@@ -103,6 +103,39 @@ export interface DomainAudit {
   r1_company_logo_url: string | null;
   r1_competitor_domain: string | null;
   r1_competitor_gads_cost: number | null;
+  
+  // Clay enrichment fields
+  linkedin_url: string | null;
+  company_name: string | null;
+  country: string | null;
+  city_locality: string | null;
+  founded_year: number | null;
+  company_description: string | null;
+  specialties: string[] | null;
+  linkedin_follower_count: number | null;
+
+  // Competitor fields
+  competitor_1_domain: string | null;
+  competitor_1_monthly_gads_traffic: number | null;
+  competitor_1_monthly_adwords_cost: number | null;
+  competitor_2_domain: string | null;
+  competitor_2_monthly_gads_traffic: number | null;
+  competitor_2_monthly_adwords_cost: number | null;
+
+  // SEMRush metrics
+  semrush_total_visits: number | null;
+  semrush_traffic_rank: number | null;
+  semrush_bounce_rate: number | null;
+  semrush_pages_per_visit: number | null;
+  semrush_time_on_site: number | null;
+  semrush_paid_visits: number | null;
+  semrush_organic_visits: number | null;
+  semrush_direct_visits: number | null;
+  semrush_social_visits: number | null;
+  semrush_mobile_traffic_share: number | null;
+  semrush_mobile_bounce_rate: number | null;
+  similarweb_visits: number | null;
+
   created_at: string;
   updated_at: string;
 }

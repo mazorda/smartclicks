@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useSupabase';
 import CompanyProfile from './components/CompanyProfile';
 import MetricCard from './components/MetricCard';
 import IndustryTrendsChart from './components/IndustryTrendsChart';
+import CompetitorTable from './components/CompetitorTable';
 import { useDomainAudit } from '../../hooks/useDomainAudit';
 import LoadingAnimation from './components/LoadingAnimation';
 import AnalysisProgress from '../onboarding/steps/AnalysisProgress';
@@ -200,33 +201,14 @@ const AuditDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Landing Pages & Competitors */}
+      {/* Competitors & Traffic Sources */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Top Performing Landing Pages</h2>
-            {isProcessing && <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />}
-          </div>
-          <div className="space-y-4">
-            {auditData.r1_landing_pages && typeof auditData.r1_landing_pages === 'object' ? (
-              Object.entries(auditData.r1_landing_pages).slice(0, 3).map(([path, score], i) => (
-                <div key={i} className={`flex items-center justify-between p-3 bg-gray-700/50 rounded-lg ${!user && !isDemoMode && i > 0 ? 'blur-[2px]' : ''}`}>
-                  {(!user && !isDemoMode && i > 0) && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Lock className="w-5 h-5 text-gray-400" />
-                    </div>
-                  )}
-                  <span className="text-gray-300">{path}</span>
-                  <span className="text-green-400 font-semibold">{typeof score === 'number' ? `${score}% Score` : String(score)}</span>
-                </div>
-              ))
-            ) : (
-              <div className="p-3 bg-gray-700/50 rounded-lg text-center text-gray-400">
-                {isProcessing ? 'Analyzing landing pages...' : 'No landing page data available'}
-              </div>
-            )}
-          </div>
-        </div>
+        <CompetitorTable
+          auditData={auditData}
+          loading={isProcessing}
+          isAuthenticated={!!user}
+          isDemoMode={isDemoMode}
+        />
 
         <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
