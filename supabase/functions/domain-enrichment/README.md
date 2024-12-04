@@ -1,40 +1,43 @@
 # Domain Enrichment Function
 
-This Edge Function handles domain data enrichment through a secure, private API endpoint.
+This Edge Function handles webhooks from Clay.com to enrich domain data.
 
-## Setup
+## Data Flow
 
-1. Deploy the Edge Function to Supabase:
-```bash
-supabase functions deploy domain-enrichment
+1. User submits domain for analysis
+2. Clay processes the domain and sends data to this webhook
+3. Data is stored in domain_audits table:
+   - Raw data in clay_data JSONB column
+   - Extracted fields in dedicated columns via trigger
+
+## Clay Data Structure
+
+Clay sends data with capitalized field names:
+```json
+{
+  "Size": "11-50 employees",
+  "domain": "example.com",
+  "Country": "US",
+  "Founded": "2010",
+  "Industry": "Technology",
+  "Description": "Company description...",
+  "Specialties": "Field1, Field2",
+  "Linkedin Url": "https://linkedin.com/...",
+  "City Locality": "City, State"
+}
 ```
 
-2. Set the following environment variables in Supabase:
-```bash
-supabase secrets set ENRICHMENT_API_KEY=your_api_key
-supabase secrets set ENRICHMENT_API_URL=your_api_url
-```
+## Database Trigger
 
-## Environment Variables
+A PostgreSQL trigger (extract_clay_data) automatically extracts fields from clay_data:
+- Handles both lowercase and uppercase field names
+- Properly types numeric and integer fields
+- Extracts nested data (SEMRush, competitors)
 
-- `ENRICHMENT_API_KEY`: API key for the enrichment service
-- `ENRICHMENT_API_URL`: Base URL for the enrichment API
-- `SUPABASE_URL`: Automatically provided by Supabase
-- `SUPABASE_ANON_KEY`: Automatically provided by Supabase
+## Monitoring
 
-## Usage
-
-The function is called automatically by the domain audit service when:
-1. A new domain audit is created
-2. Checking enrichment status
-
-The function handles:
-- Initial enrichment requests
-- Status checks
-- Updating the database with enriched data
-
-## Security
-
-- All API keys and sensitive data are stored as environment variables
-- The function runs in a secure, isolated environment
-- No external service details are exposed in the client-side code
+View webhook activity:
+1. Supabase Dashboard > Edge Functions
+2. Select 'domain-enrichment'
+3. Check Logs tab for incoming webhooks
+4. Raw Clay data is preserved in clay_data column
