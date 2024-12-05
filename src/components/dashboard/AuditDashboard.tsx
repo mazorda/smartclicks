@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Zap, Users, Globe2, Target, Lock, RefreshCw, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Zap, Users, Globe2, Target, Lock, RefreshCw, ArrowRight, AlertTriangle, Clock, MousePointer, Smartphone, Search } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useSupabase';
 import CompanyProfile from './components/CompanyProfile';
@@ -100,7 +100,7 @@ const AuditDashboard: React.FC = () => {
   }
 
   // Show upgrade prompt for anonymous users
-  const UpgradePrompt = () => !user && !isDemoMode && (
+  const UpgradePrompt = () => !user && !isDemoMode && !auditData.semrush_total_visits && (
     <div className="mb-8 bg-gradient-to-r from-purple-900/50 to-blue-900/50 rounded-xl p-6 border border-purple-500/20">
       <div className="flex items-center justify-between">
         <div>
@@ -138,6 +138,9 @@ const AuditDashboard: React.FC = () => {
     </div>
   );
 
+  // Determine if metrics should be locked
+  const shouldLockMetrics = !user && !isDemoMode && !auditData.semrush_total_visits;
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       {/* Progress Indicator */}
@@ -163,52 +166,47 @@ const AuditDashboard: React.FC = () => {
       <CompanyProfile 
         domain={auditData.domain}
         loading={isProcessing}
+        auditData={auditData}
       />
 
       {/* Upgrade Prompt */}
       <UpgradePrompt />
 
-      {/* KPIs Grid */}
+      {/* Key Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           title="Site Engagement Score"
-          value={auditData.semrush_time_on_site ? `${Math.round(auditData.semrush_time_on_site)}` : '••••'}
-          icon={<Zap className="w-5 h-5 text-green-400" />}
+          value={auditData.semrush_time_on_site ? `${Math.round(auditData.semrush_time_on_site)}s` : '••••'}
+          icon={<Clock className="w-5 h-5 text-green-400" />}
           loading={isProcessing}
-          locked={!user && !isDemoMode}
+          locked={shouldLockMetrics}
         />
         <MetricCard
           title="Monthly Visitors"
           value={auditData.semrush_total_visits ? `${(auditData.semrush_total_visits / 1000).toFixed(1)}K` : '••••'}
           icon={<Users className="w-5 h-5 text-purple-400" />}
           loading={isProcessing}
-          locked={!user && !isDemoMode}
+          locked={shouldLockMetrics}
         />
         <MetricCard
           title="Traffic World Rank"
           value={auditData.semrush_traffic_rank ? auditData.semrush_traffic_rank.toLocaleString() : '••••'}
           icon={<Globe2 className="w-5 h-5 text-blue-400" />}
           loading={isProcessing}
-          locked={!user && !isDemoMode}
+          locked={shouldLockMetrics}
         />
         <MetricCard
-          title="Mobile Traffic Share"
-          value={auditData.semrush_mobile_traffic_share ? `${auditData.semrush_mobile_traffic_share}%` : '••••'}
-          icon={<Target className="w-5 h-5 text-orange-400" />}
+          title="Pages per Visit"
+          value={auditData.semrush_pages_per_visit ? auditData.semrush_pages_per_visit.toString() : '••••'}
+          icon={<MousePointer className="w-5 h-5 text-orange-400" />}
           loading={isProcessing}
-          locked={!user && !isDemoMode}
+          locked={shouldLockMetrics}
         />
       </div>
 
-      {/* Competitors & Traffic Sources */}
+      {/* Traffic Sources & Mobile Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <CompetitorTable
-          auditData={auditData}
-          loading={isProcessing}
-          isAuthenticated={!!user}
-          isDemoMode={isDemoMode}
-        />
-
+        {/* Traffic Sources */}
         <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">Traffic Sources</h2>
@@ -216,40 +214,88 @@ const AuditDashboard: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <MetricCard
-              title="Total Visitors"
-              value={auditData.semrush_total_visits ? auditData.semrush_total_visits.toLocaleString() : '••••'}
-              icon={<Users className="w-5 h-5 text-blue-400" />}
+              title="Organic Traffic"
+              value={auditData.semrush_organic_visits ? auditData.semrush_organic_visits.toLocaleString() : '••••'}
+              icon={<Search className="w-5 h-5 text-green-400" />}
               loading={isProcessing}
-              locked={!user && !isDemoMode}
+              locked={shouldLockMetrics}
             />
             <MetricCard
-              title="Paid Visitors"
+              title="Paid Traffic"
               value={auditData.semrush_paid_visits ? auditData.semrush_paid_visits.toLocaleString() : '••••'}
               icon={<Target className="w-5 h-5 text-purple-400" />}
               loading={isProcessing}
-              locked={!user && !isDemoMode}
+              locked={shouldLockMetrics}
             />
             <MetricCard
-              title="Organic Visitors"
-              value={auditData.semrush_organic_visits ? auditData.semrush_organic_visits.toLocaleString() : '••••'}
-              icon={<Globe2 className="w-5 h-5 text-green-400" />}
+              title="Direct Traffic"
+              value={auditData.semrush_direct_visits ? auditData.semrush_direct_visits.toLocaleString() : '••••'}
+              icon={<Globe2 className="w-5 h-5 text-blue-400" />}
               loading={isProcessing}
-              locked={!user && !isDemoMode}
+              locked={shouldLockMetrics}
             />
             <MetricCard
-              title="Bounce Rate"
+              title="Social Traffic"
+              value={auditData.semrush_social_visits ? auditData.semrush_social_visits.toLocaleString() : '••••'}
+              icon={<Users className="w-5 h-5 text-orange-400" />}
+              loading={isProcessing}
+              locked={shouldLockMetrics}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Performance */}
+        <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Mobile Performance</h2>
+            {isProcessing && <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <MetricCard
+              title="Mobile Traffic Share"
+              value={auditData.semrush_mobile_traffic_share ? `${auditData.semrush_mobile_traffic_share}%` : '••••'}
+              icon={<Smartphone className="w-5 h-5 text-blue-400" />}
+              loading={isProcessing}
+              locked={shouldLockMetrics}
+            />
+            <MetricCard
+              title="Mobile Bounce Rate"
+              value={auditData.semrush_mobile_bounce_rate ? `${auditData.semrush_mobile_bounce_rate}%` : '••••'}
+              icon={<Target className="w-5 h-5 text-red-400" />}
+              loading={isProcessing}
+              locked={shouldLockMetrics}
+            />
+            <MetricCard
+              title="Desktop Traffic Share"
+              value={auditData.semrush_mobile_traffic_share ? `${100 - auditData.semrush_mobile_traffic_share}%` : '••••'}
+              icon={<Globe2 className="w-5 h-5 text-purple-400" />}
+              loading={isProcessing}
+              locked={shouldLockMetrics}
+            />
+            <MetricCard
+              title="Overall Bounce Rate"
               value={auditData.semrush_bounce_rate ? `${auditData.semrush_bounce_rate}%` : '••••'}
               icon={<Target className="w-5 h-5 text-orange-400" />}
               loading={isProcessing}
-              locked={!user && !isDemoMode}
+              locked={shouldLockMetrics}
             />
           </div>
         </div>
       </div>
 
+      {/* Competitors Table */}
+      <div className="mb-8">
+        <CompetitorTable
+          auditData={auditData}
+          loading={isProcessing}
+          isAuthenticated={!!user}
+          isDemoMode={isDemoMode}
+        />
+      </div>
+
       {/* Industry Trends Chart */}
-      <div className={`relative ${!user && !isDemoMode ? 'blur-[2px]' : ''}`}>
-        {!user && !isDemoMode && (
+      <div className={`relative ${shouldLockMetrics ? 'blur-[2px]' : ''}`}>
+        {shouldLockMetrics && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="bg-gray-800/90 px-6 py-4 rounded-lg backdrop-blur-sm border border-gray-700">
               <Lock className="w-6 h-6 text-purple-400 mx-auto mb-2" />
