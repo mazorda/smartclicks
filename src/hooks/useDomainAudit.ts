@@ -36,11 +36,7 @@ const calculateProgress = (audit: DomainAudit | null): number => {
 
 const isPremiumAudit = (audit: DomainAudit | null): boolean => {
   if (!audit) return false;
-  return Boolean(
-    audit.r1_gads_health_score ||
-    audit.r1_health_score_analysis ||
-    audit.clay_data
-  );
+  return Boolean(audit.clay_data);
 };
 
 export function useDomainAudit(domain?: string) {

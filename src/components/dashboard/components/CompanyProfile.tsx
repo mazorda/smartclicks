@@ -4,13 +4,11 @@ import { motion } from 'framer-motion';
 
 interface CompanyProfileProps {
   domain: string;
-  healthScoreAnalysis?: string;
   loading?: boolean;
 }
 
 const CompanyProfile: React.FC<CompanyProfileProps> = ({
   domain,
-  healthScoreAnalysis,
   loading = false
 }) => {
   const getFaviconUrl = (domain: string) => {
@@ -28,7 +26,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({
             {/* Domain name skeleton */}
             <div className="h-8 w-48 bg-gray-700 rounded animate-pulse" />
             
-            {/* Health score skeleton */}
+            {/* Company info skeleton */}
             <div className="flex items-center space-x-2">
               <div className="h-4 w-24 bg-gray-700 rounded animate-pulse" />
               <div className="h-4 w-32 bg-gray-700 rounded animate-pulse" />
@@ -63,17 +61,10 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({
             <Globe className="w-5 h-5 text-gray-400" />
           </div>
           
-          {healthScoreAnalysis ? (
-            <div className="flex items-center space-x-2">
-              <Building2 className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-300">{healthScoreAnalysis}</span>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-2 text-yellow-500">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-sm">Health score analysis pending</span>
-            </div>
-          )}
+          <div className="flex items-center space-x-2">
+            <Building2 className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">Domain Analysis</span>
+          </div>
         </div>
       </div>
     </motion.div>

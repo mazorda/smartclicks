@@ -88,21 +88,6 @@ export interface DomainAudit {
     [key: string]: any;
   };
   user_id?: string | null;
-  r1_gads_health_score: number | null;
-  r1_health_score_analysis: string | null;
-  r1_landing_pages: any | null;
-  r1_analysis: string | null;
-  r1_bounce_rate: number | null;
-  r1_traffic_rank: number | null;
-  r1_avg_time_on_site: number | null;
-  r1_total_visits: number | null;
-  r1_paid_visits: number | null;
-  r1_organic_visits: number | null;
-  r1_company_size: string | null;
-  r1_company_industry: string | null;
-  r1_company_logo_url: string | null;
-  r1_competitor_domain: string | null;
-  r1_competitor_gads_cost: number | null;
   
   // Clay enrichment fields
   linkedin_url: string | null;

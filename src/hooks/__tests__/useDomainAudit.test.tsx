@@ -33,8 +33,8 @@ function DomainAuditDisplay() {
   return (
     <div>
       <h2>{data.domain}</h2>
-      <p>Health Score: {data.r1_gads_health_score}</p>
-      <p>Analysis: {data.r1_health_score_analysis}</p>
+      <p>Traffic Score: {data.semrush_traffic_rank}</p>
+      <p>Time on Site: {data.semrush_time_on_site}</p>
       <button onClick={refresh}>Refresh</button>
     </div>
   );
@@ -69,8 +69,8 @@ describe('useDomainAudit', () => {
     const mockData = {
       id: '1',
       domain: 'example.com',
-      r1_gads_health_score: 92,
-      r1_health_score_analysis: 'Good performance',
+      semrush_traffic_rank: 92000,
+      semrush_time_on_site: 180,
       status: 'completed',
       enrichment_status: 'completed',
       created_at: new Date().toISOString(),
@@ -128,7 +128,7 @@ describe('useDomainAudit', () => {
     const mockData = {
       id: '1',
       domain: 'example.com',
-      r1_gads_health_score: 92,
+      semrush_traffic_rank: 92000,
       status: 'completed',
       enrichment_status: 'completed',
       created_at: new Date().toISOString(),
@@ -137,7 +137,7 @@ describe('useDomainAudit', () => {
 
     (domainAuditServices.getLatestDomainAudit as jest.Mock)
       .mockResolvedValueOnce(mockData)
-      .mockResolvedValueOnce({ ...mockData, r1_gads_health_score: 95 });
+      .mockResolvedValueOnce({ ...mockData, semrush_traffic_rank: 90000 });
 
     const { result } = renderHook(() => useDomainAudit());
 
@@ -145,13 +145,13 @@ describe('useDomainAudit', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(result.current.data?.r1_gads_health_score).toBe(92);
+    expect(result.current.data?.semrush_traffic_rank).toBe(92000);
 
     await act(async () => {
       await result.current.refresh();
     });
 
-    expect(result.current.data?.r1_gads_health_score).toBe(95);
+    expect(result.current.data?.semrush_traffic_rank).toBe(90000);
   });
 
   it('should handle retry with maximum attempts', async () => {

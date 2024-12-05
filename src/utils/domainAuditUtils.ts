@@ -209,10 +209,6 @@ export function withTimeout<T>(
 export function sanitizeDomainAudit(data: Partial<DomainAudit>): Partial<DomainAudit> {
   const sanitized = {
     ...data,
-    r1_gads_health_score: data.r1_gads_health_score ? 
-      Math.max(0, Math.min(100, data.r1_gads_health_score)) : null,
-    r1_bounce_rate: data.r1_bounce_rate ? 
-      Math.max(0, Math.min(100, data.r1_bounce_rate)) : null,
     domain: data.domain?.toLowerCase().trim()
   };
 

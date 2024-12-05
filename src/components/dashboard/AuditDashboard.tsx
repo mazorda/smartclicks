@@ -162,7 +162,6 @@ const AuditDashboard: React.FC = () => {
       {/* Company Profile */}
       <CompanyProfile 
         domain={auditData.domain}
-        healthScoreAnalysis={auditData.r1_health_score_analysis || undefined}
         loading={isProcessing}
       />
 
@@ -173,28 +172,28 @@ const AuditDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           title="Site Engagement Score"
-          value={auditData.r1_avg_time_on_site ? `${Math.round(auditData.r1_avg_time_on_site)}` : '••••'}
+          value={auditData.semrush_time_on_site ? `${Math.round(auditData.semrush_time_on_site)}` : '••••'}
           icon={<Zap className="w-5 h-5 text-green-400" />}
           loading={isProcessing}
           locked={!user && !isDemoMode}
         />
         <MetricCard
           title="Monthly Visitors"
-          value={auditData.r1_total_visits ? `${(auditData.r1_total_visits / 1000).toFixed(1)}K` : '••••'}
+          value={auditData.semrush_total_visits ? `${(auditData.semrush_total_visits / 1000).toFixed(1)}K` : '••••'}
           icon={<Users className="w-5 h-5 text-purple-400" />}
           loading={isProcessing}
           locked={!user && !isDemoMode}
         />
         <MetricCard
           title="Traffic World Rank"
-          value={auditData.r1_traffic_rank ? auditData.r1_traffic_rank.toLocaleString() : '••••'}
+          value={auditData.semrush_traffic_rank ? auditData.semrush_traffic_rank.toLocaleString() : '••••'}
           icon={<Globe2 className="w-5 h-5 text-blue-400" />}
           loading={isProcessing}
           locked={!user && !isDemoMode}
         />
         <MetricCard
-          title="Google Ads Health Score"
-          value={auditData.r1_gads_health_score ? auditData.r1_gads_health_score.toString() : '••••'}
+          title="Mobile Traffic Share"
+          value={auditData.semrush_mobile_traffic_share ? `${auditData.semrush_mobile_traffic_share}%` : '••••'}
           icon={<Target className="w-5 h-5 text-orange-400" />}
           loading={isProcessing}
           locked={!user && !isDemoMode}
@@ -218,28 +217,28 @@ const AuditDashboard: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <MetricCard
               title="Total Visitors"
-              value={auditData.r1_total_visits ? auditData.r1_total_visits.toLocaleString() : '••••'}
+              value={auditData.semrush_total_visits ? auditData.semrush_total_visits.toLocaleString() : '••••'}
               icon={<Users className="w-5 h-5 text-blue-400" />}
               loading={isProcessing}
               locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Paid Visitors"
-              value={auditData.r1_paid_visits ? auditData.r1_paid_visits.toLocaleString() : '••••'}
+              value={auditData.semrush_paid_visits ? auditData.semrush_paid_visits.toLocaleString() : '••••'}
               icon={<Target className="w-5 h-5 text-purple-400" />}
               loading={isProcessing}
               locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Organic Visitors"
-              value={auditData.r1_organic_visits ? auditData.r1_organic_visits.toLocaleString() : '••••'}
+              value={auditData.semrush_organic_visits ? auditData.semrush_organic_visits.toLocaleString() : '••••'}
               icon={<Globe2 className="w-5 h-5 text-green-400" />}
               loading={isProcessing}
               locked={!user && !isDemoMode}
             />
             <MetricCard
               title="Bounce Rate"
-              value={auditData.r1_bounce_rate ? `${auditData.r1_bounce_rate}%` : '••••'}
+              value={auditData.semrush_bounce_rate ? `${auditData.semrush_bounce_rate}%` : '••••'}
               icon={<Target className="w-5 h-5 text-orange-400" />}
               loading={isProcessing}
               locked={!user && !isDemoMode}

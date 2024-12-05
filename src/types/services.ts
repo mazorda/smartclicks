@@ -59,20 +59,30 @@ export interface DomainAuditValidationRules {
 export const DEFAULT_VALIDATION_RULES: DomainAuditValidationRules = {
   required: ['domain', 'status', 'enrichment_status'],
   numeric: [
-    'r1_gads_health_score',
-    'r1_bounce_rate',
-    'r1_traffic_rank',
-    'r1_avg_time_on_site',
-    'r1_total_visits',
-    'r1_paid_visits',
-    'r1_organic_visits'
+    'semrush_traffic_rank',
+    'semrush_bounce_rate',
+    'semrush_time_on_site',
+    'semrush_total_visits',
+    'semrush_paid_visits',
+    'semrush_organic_visits',
+    'semrush_direct_visits',
+    'semrush_social_visits',
+    'semrush_mobile_traffic_share',
+    'semrush_mobile_bounce_rate',
+    'semrush_pages_per_visit',
+    'similarweb_visits',
+    'linkedin_follower_count',
+    'founded_year'
   ],
   string: [
     'domain',
     'status',
     'enrichment_status',
-    'r1_health_score_analysis',
-    'r1_analysis'
+    'linkedin_url',
+    'company_name',
+    'country',
+    'city_locality',
+    'company_description'
   ],
   status: {
     validValues: ['pending', 'processing', 'completed', 'failed']

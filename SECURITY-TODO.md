@@ -57,6 +57,14 @@
 - [ ] Add proper PII handling
 - [ ] Implement data retention policies
 - [ ] Set up proper backup security
+- [ ] Review Clay data storage security:
+  - [ ] Sanitize and validate clay_data JSON
+  - [ ] Implement PII redaction in clay_data
+  - [ ] Set up access controls for sensitive fields
+- [ ] SEMRush metrics protection:
+  - [ ] Implement rate limiting for metric access
+  - [ ] Set up data freshness policies
+  - [ ] Add metric access logging
 
 ### 6. API Security
 - [ ] Add proper API authentication
@@ -64,6 +72,11 @@
 - [ ] Set up proper CORS policies
 - [ ] Add rate limiting
 - [ ] Implement proper error handling
+- [ ] Clay webhook security:
+  - [ ] Implement webhook signature validation
+  - [ ] Add IP allowlisting for Clay servers
+  - [ ] Set up webhook retry policies
+  - [ ] Add webhook event logging
 
 ### 7. Monitoring & Logging
 - [ ] Set up security event logging
@@ -71,6 +84,10 @@
 - [ ] Add security alert system
 - [ ] Set up audit logging
 - [ ] Implement proper log rotation
+- [ ] Add data access monitoring:
+  - [ ] Track access to sensitive metrics
+  - [ ] Monitor Clay data usage
+  - [ ] Log competitor data access
 
 ### 8. Testing
 - [ ] Add security-focused integration tests
@@ -78,6 +95,10 @@
 - [ ] Add authentication flow testing
 - [ ] Set up continuous security scanning
 - [ ] Implement proper test data handling
+- [ ] Schema validation testing:
+  - [ ] Test Clay data structure validation
+  - [ ] Verify SEMRush metric constraints
+  - [ ] Validate competitor data format
 
 ## Current Temporary Permissions
 
@@ -107,6 +128,9 @@ with check (true);
 3. Lack of user isolation in queries
 4. Missing delete policies
 5. Overly permissive service role usage
+6. Clay webhook authentication
+7. SEMRush data access controls
+8. Competitor data visibility rules
 
 ## Security Contacts
 - Primary Security Contact: [TO BE ADDED]

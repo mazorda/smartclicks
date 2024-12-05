@@ -77,6 +77,23 @@ npm run typecheck   # Check TypeScript types
 - [ ] Test form submissions
 - [ ] Check error handling
 
+### Domain Audit Testing
+- [ ] Verify SEMRush metrics display correctly:
+  - Total visits
+  - Traffic rank
+  - Bounce rate
+  - Time on site
+  - Traffic sources (paid/organic/direct/social)
+  - Mobile metrics
+- [ ] Check Clay data integration:
+  - Company info population
+  - LinkedIn data
+  - Competitor analysis
+- [ ] Test status flow:
+  - pending -> processing -> completed
+  - Error handling
+  - Retry functionality
+
 ### Debug Procedures
 1. Check browser console for errors
 2. Verify network requests in DevTools
@@ -91,6 +108,12 @@ npm run typecheck   # Check TypeScript types
 - [ ] Monitor memory usage in DevTools
 
 ## 3. Deployment Phase
+
+### Pre-Deployment Schema Checks
+- [ ] Verify Clay webhook configuration matches current schema
+- [ ] Test domain audit flow with new schema
+- [ ] Check SEMRush data mapping
+- [ ] Verify competitor data structure
 
 ### Git Commit Guidelines
 - Use conventional commits:
@@ -132,6 +155,9 @@ npm run typecheck   # Check TypeScript types
 - [ ] Test authentication flow
 - [ ] Verify API connections
 - [ ] Check analytics tracking
+- [ ] Test domain audit submission
+- [ ] Verify Clay webhook functionality
+- [ ] Check SEMRush data flow
 
 ## 4. Emergency Procedures
 
@@ -177,7 +203,7 @@ npm run typecheck   # Check TypeScript types
 - Technical Lead: [Contact Info]
 - DevOps Support: [Contact Info]
 - Supabase Support: https://supabase.com/support
-- Netlify Support: https://www.netlify.com/support/
+- Netlify Support: https://www.netlify.com/support
 
 ### Debug Logs Location
 - Development: Browser console & terminal

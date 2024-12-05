@@ -13,8 +13,12 @@ export const DEMO_AUDIT_DATA: DomainAudit = {
     employee_count: '50-200',
     location: 'San Francisco, CA'
   },
-  r1_health_score_analysis: JSON.stringify({
-    overall_score: 85,
+  clay_data: {
+    company_size: '50-200',
+    industry: 'Technology',
+    founded_year: 2018,
+    funding_stage: 'Series A',
+    company_description: 'Leading technology solutions provider specializing in digital transformation.',
     recommendations: [
       'Optimize mobile experience',
       'Improve page load times',
@@ -25,32 +29,39 @@ export const DEMO_AUDIT_DATA: DomainAudit = {
       'Good content strategy',
       'Effective call-to-actions'
     ]
-  }),
-  r1_gads_health_score: 82,
-  r1_avg_time_on_site: 185, // seconds
-  r1_total_visits: 125000,
-  r1_paid_visits: 45000,
-  r1_organic_visits: 80000,
-  r1_bounce_rate: 32,
-  r1_traffic_rank: 15420,
-  r1_landing_pages: {
-    '/products': 92,
-    '/solutions': 88,
-    '/pricing': 85,
-    '/about': 78
   },
-  clay_data: {
-    company_size: '50-200',
-    industry: 'Technology',
-    founded_year: 2018,
-    funding_stage: 'Series A'
-  },
-  r1_company_size: '50-200',
-  r1_company_industry: 'Technology',
-  r1_company_logo_url: null,
-  r1_competitor_domain: null,
-  r1_competitor_gads_cost: null,
-  r1_analysis: null,
+  // SEMRush metrics
+  semrush_time_on_site: 185,
+  semrush_total_visits: 125000,
+  semrush_paid_visits: 45000,
+  semrush_organic_visits: 80000,
+  semrush_bounce_rate: 32,
+  semrush_traffic_rank: 15420,
+  semrush_pages_per_visit: 4.2,
+  semrush_direct_visits: 25000,
+  semrush_social_visits: 15000,
+  semrush_mobile_traffic_share: 65,
+  semrush_mobile_bounce_rate: 35,
+  similarweb_visits: 130000,
+
+  // Clay enrichment fields
+  linkedin_url: 'https://linkedin.com/company/demo-company',
+  company_name: 'Demo Company Inc.',
+  country: 'United States',
+  city_locality: 'San Francisco',
+  founded_year: 2018,
+  company_description: 'Leading technology solutions provider',
+  specialties: ['Digital Transformation', 'Cloud Solutions', 'AI/ML'],
+  linkedin_follower_count: 5000,
+
+  // Competitor fields
+  competitor_1_domain: 'competitor1.com',
+  competitor_1_monthly_gads_traffic: 40000,
+  competitor_1_monthly_adwords_cost: 25000,
+  competitor_2_domain: 'competitor2.com',
+  competitor_2_monthly_gads_traffic: 35000,
+  competitor_2_monthly_adwords_cost: 20000,
+
   user_id: null
 };
 
@@ -66,11 +77,11 @@ export const NEW_COMPANY_DATA: Partial<DomainAudit> = {
 // Helper to determine if a domain audit represents a new company
 export const isNewCompany = (audit: DomainAudit | null): boolean => {
   if (!audit) return false;
-  return audit.status === 'processing' && !audit.r1_health_score_analysis;
+  return audit.status === 'processing' && !audit.clay_data;
 };
 
 // Helper to determine if a domain audit is for an existing company
 export const isExistingCompany = (audit: DomainAudit | null): boolean => {
   if (!audit) return false;
-  return audit.status === 'completed' && Boolean(audit.r1_health_score_analysis);
+  return audit.status === 'completed' && Boolean(audit.clay_data);
 };

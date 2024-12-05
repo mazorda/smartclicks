@@ -86,11 +86,11 @@ export default function AnalysisProgress({ onComplete, domain }: Props) {
       },
       {
         icon: <Target className="h-6 w-6" />,
-        title: "Health Analysis",
-        description: "Analyzing Google Ads performance",
+        title: "Traffic Analysis",
+        description: "Analyzing website performance",
         status: !data ? 'pending' :
                 data.status !== 'completed' ? 'pending' :
-                data.enrichment_status === 'completed' && data.r1_gads_health_score ? 'completed' : 'pending',
+                data.enrichment_status === 'completed' && data.semrush_traffic_rank ? 'completed' : 'pending',
         isPremium: true
       },
       {

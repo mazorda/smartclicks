@@ -143,69 +143,6 @@ serve(async (req: Request) => {
       // SimilarWeb Data
       similarweb_visits: parseNumericValue(extractValue(body, ['similarweb_visits', 'SimilarWeb.total_visits'])),
 
-      // Legacy fields maintained for backward compatibility
-      r1_health_score_analysis: extractValue(body, [
-        'r1_healthscore_analysis',
-        'Google Ads Analysis Health Analysis',
-        'healthscore_analysis'
-      ]),
-      r1_gads_health_score: parseNumericValue(extractValue(body, [
-        'Google Ads Analysis Health Score',
-        'health_score'
-      ])),
-      r1_analysis: extractValue(body, [
-        'Google Ads Analysis Findings',
-        'findings',
-        'analysis'
-      ]),
-      r1_landing_pages: extractValue(body, [
-        'Google Ads Analysis.landing_pages',
-        'landing_pages',
-        'r1_landing_pages'
-      ]),
-      r1_bounce_rate: parseNumericValue(extractValue(body, [
-        'Get website bounce rate.bounce_rate',
-        'bounce_rate'
-      ])),
-      r1_traffic_rank: parseNumericValue(extractValue(body, [
-        'Get Traffic Analytics.returnObject.traffic_rank',
-        'traffic_rank'
-      ])),
-      r1_avg_time_on_site: parseNumericValue(extractValue(body, [
-        'Get Traffic Analytics.returnObject.average_time_on_site',
-        'average_time_on_site'
-      ])),
-      r1_total_visits: parseNumericValue(extractValue(body, [
-        'Get Traffic Analytics.returnObject.total_visits',
-        'total_visits'
-      ])),
-      r1_organic_visits: parseNumericValue(extractValue(body, [
-        'Get Traffic Analytics.returnObject.visits.organic_search_visits',
-        'search_visits',
-        'organic_visits'
-      ])),
-      r1_paid_visits: parseNumericValue(extractValue(body, [
-        'Paid Visits SEMRush',
-        'paid_visits'
-      ])),
-      r1_company_size: extractValue(body, [
-        'Enrich Company.size',
-        'company_size',
-        'size'
-      ]),
-      r1_company_industry: extractValue(body, [
-        'Enrich Company.industry',
-        'company_industry',
-        'industry'
-      ]),
-      r1_company_logo_url: extractValue(body, [
-        'Enrich Company.logo_url',
-        'company_logo_url',
-        'logo_url'
-      ]),
-      r1_competitor_domain: competitors[0]?.domain,
-      r1_competitor_gads_cost: parseNumericValue(competitors[0]?.monthlyAdwordsCostInUSD),
-
       // Metadata update
       metadata: {
         lastAttempt: new Date().toISOString(),
@@ -250,7 +187,7 @@ serve(async (req: Request) => {
       .from('domain_audits')
       .update(updateData)
       .eq('domain', domain)
-      .select()
+      .select('id, domain, status, enrichment_status, created_at, updated_at')
 
     if (updateError) {
       console.error('DEBUG - Database update error:', updateError)
