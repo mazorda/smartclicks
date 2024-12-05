@@ -64,7 +64,7 @@ const CompetitorTable: React.FC<CompetitorTableProps> = ({
   };
 
   // Determine if we should show real data
-  const shouldShowRealData = isAuthenticated || isDemoMode || competitors.length > 0;
+  const shouldShowRealData = isAuthenticated || isDemoMode;
 
   return (
     <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
@@ -103,15 +103,14 @@ const CompetitorTable: React.FC<CompetitorTableProps> = ({
         {/* Dummy competitors section with single lock */}
         <div className="relative">
           {!shouldShowRealData && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="bg-gray-800/90 px-6 py-4 rounded-lg backdrop-blur-sm border border-gray-700">
-                <Lock className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-gray-300">Sign up to view competitors</p>
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-gray-900/70 rounded-lg backdrop-blur-[1px]">
+              <div className="text-center">
+                <Lock className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+                <p className="text-gray-300 font-medium">Sign up to view competitors</p>
               </div>
             </div>
           )}
-          
-          <div className={!shouldShowRealData ? 'blur-[4px]' : ''}>
+          <div className={!shouldShowRealData ? 'blur-[1px]' : ''}>
             {dummyCompetitors.map((competitor, index) => (
               <div
                 key={index}

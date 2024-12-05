@@ -13,19 +13,60 @@ import {
   LineChart,
   Sun,
   Moon,
-  LogIn
+  LogIn,
+  Users2,
+  TrendingUp,
+  Brain,
+  ClipboardCheck
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-const navigation = [
-  { name: 'Site Audit', href: '/dashboard', icon: LineChart, requiresAuth: false },
-  { name: 'Meetings', href: '/dashboard/meetings', icon: Calendar, requiresAuth: true },
+interface NavigationItem {
+  name: string;
+  icon: LucideIcon;
+  href?: string;
+  disabled?: boolean;
+  noLink?: boolean;
+  requiresAuth?: boolean;
+}
+
+const navigation: NavigationItem[] = [
+  { name: 'Site Audit', icon: LineChart, noLink: true },
+  { 
+    name: 'Competitors', 
+    icon: Users2, 
+    disabled: true,
+    href: '/dashboard/competitors'
+  },
+  { 
+    name: 'Industry Trends', 
+    icon: TrendingUp, 
+    disabled: true,
+    href: '/dashboard/trends'
+  },
+  { 
+    name: 'AI Insights', 
+    icon: Brain, 
+    disabled: true,
+    href: '/dashboard/insights'
+  },
+  { 
+    name: 'Audit Results', 
+    icon: ClipboardCheck, 
+    disabled: true,
+    href: '/dashboard/results'
+  },
+  { 
+    name: 'Meetings', 
+    icon: Calendar, 
+    disabled: true,
+    href: '/dashboard/meetings'
+  },
   { 
     name: 'Chat Assistant', 
-    href: '/dashboard/chat', 
     icon: MessageSquare,
-    requiresAuth: true,
     disabled: true,
-    badge: 'Coming Soon'
+    href: '/dashboard/chat'
   },
 ];
 
@@ -35,7 +76,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showNotification, setShowNotification] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -49,11 +89,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       console.error('Logout failed:', error);
     }
   };
-
-  // Filter navigation items based on auth status
-  const filteredNavigation = navigation.filter(item => 
-    !item.requiresAuth || (item.requiresAuth && user)
-  );
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -137,46 +172,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex pt-16">
         <aside className="hidden md:fixed md:flex left-0 top-16 z-40 w-64 h-screen">
           <div className="h-full px-3 py-4 overflow-y-auto bg-gray-800 border-r border-gray-700 w-full">
-            <ul className="space-y-2 font-medium">
-              {filteredNavigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                const isDisabled = item.disabled || (item.requiresAuth && !user);
+            <ul className="space-y-1 font-medium">
+              {navigation.map((item) => {
+                const isActive = !item.noLink && location.pathname === item.href;
+                const isDisabled = item.disabled;
+                
+                const MenuItem = () => (
+                  <div className={`group relative flex items-center p-3 rounded-lg transition-all duration-200 
+                    ${isActive ? 'bg-purple-900/30 text-purple-400 scale-105' : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}
+                  `}>
+                    <div className="flex items-center flex-1">
+                      <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : 'text-gray-400'}`} />
+                      <span className="ml-3 text-sm">{item.name}</span>
+                    </div>
+                    {isDisabled && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-gray-900/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-sm text-purple-400">Coming Soon</span>
+                      </div>
+                    )}
+                  </div>
+                );
                 
                 return (
                   <li key={item.name}>
-                    <Link
-                      to={item.href}
-                      className={`flex items-center p-2 rounded-lg transition-all duration-200 ${
-                        isDisabled 
-                          ? 'cursor-not-allowed text-gray-400'
-                          : isActive
-                            ? 'bg-purple-900/30 text-purple-400 scale-105'
-                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                      }`}
-                      onClick={e => {
-                        if (isDisabled) {
-                          e.preventDefault();
+                    {item.noLink || item.disabled ? (
+                      <MenuItem />
+                    ) : (
+                      <Link
+                        to={item.href || '#'}
+                        onClick={e => {
                           if (item.requiresAuth && !user) {
+                            e.preventDefault();
                             navigate('/login');
                           }
-                        }
-                      }}
-                    >
-                      <div className="flex items-center flex-1">
-                        <item.icon className={`w-6 h-6 ${isActive ? 'text-purple-400' : 'text-gray-400'}`} />
-                        <span className="ml-3">{item.name}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="ml-2 text-xs px-2 py-1 rounded-full bg-gray-700/80 text-gray-300 whitespace-nowrap">
-                          {item.badge}
-                        </span>
-                      )}
-                      {item.requiresAuth && !user && !item.disabled && (
-                        <span className="ml-2 text-xs px-2 py-1 rounded-full bg-purple-900/30 text-purple-300 whitespace-nowrap">
-                          Pro
-                        </span>
-                      )}
-                    </Link>
+                        }}
+                      >
+                        <MenuItem />
+                      </Link>
+                    )}
                   </li>
                 );
               })}
@@ -188,48 +221,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {isMobileMenuOpen && (
           <div className="md:hidden fixed inset-0 z-40 bg-gray-900">
             <div className="pt-20 px-4">
-              <ul className="space-y-2 font-medium">
-                {filteredNavigation.map((item) => {
-                  const isActive = location.pathname === item.href;
-                  const isDisabled = item.disabled || (item.requiresAuth && !user);
+              <ul className="space-y-1 font-medium">
+                {navigation.map((item) => {
+                  const isActive = !item.noLink && location.pathname === item.href;
+                  const isDisabled = item.disabled;
+                  
+                  const MenuItem = () => (
+                    <div className={`group relative flex items-center p-3 rounded-lg 
+                      ${isActive ? 'bg-purple-900/30 text-purple-400' : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'}
+                    `}>
+                      <div className="flex items-center flex-1">
+                        <item.icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : 'text-gray-400'}`} />
+                        <span className="ml-3 text-sm">{item.name}</span>
+                      </div>
+                      {isDisabled && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-gray-900/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="text-sm text-purple-400">Coming Soon</span>
+                        </div>
+                      )}
+                    </div>
+                  );
                   
                   return (
                     <li key={item.name}>
-                      <Link
-                        to={item.href}
-                        onClick={(e) => {
-                          if (isDisabled) {
-                            e.preventDefault();
+                      {item.noLink || item.disabled ? (
+                        <MenuItem />
+                      ) : (
+                        <Link
+                          to={item.href || '#'}
+                          onClick={(e) => {
                             if (item.requiresAuth && !user) {
+                              e.preventDefault();
                               navigate('/login');
+                            } else {
+                              setIsMobileMenuOpen(false);
                             }
-                          } else {
-                            setIsMobileMenuOpen(false);
-                          }
-                        }}
-                        className={`flex items-center p-4 rounded-lg ${
-                          isDisabled
-                            ? 'cursor-not-allowed text-gray-400'
-                            : isActive
-                              ? 'bg-purple-900/30 text-purple-400'
-                              : 'text-gray-400 hover:bg-gray-700 hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center flex-1">
-                          <item.icon className={`w-6 h-6 ${isActive ? 'text-purple-400' : 'text-gray-400'}`} />
-                          <span className="ml-3">{item.name}</span>
-                        </div>
-                        {item.badge && (
-                          <span className="ml-2 text-xs px-2 py-1 rounded-full bg-gray-700/80 text-gray-300 whitespace-nowrap">
-                            {item.badge}
-                          </span>
-                        )}
-                        {item.requiresAuth && !user && !item.disabled && (
-                          <span className="ml-2 text-xs px-2 py-1 rounded-full bg-purple-900/30 text-purple-300 whitespace-nowrap">
-                            Pro
-                          </span>
-                        )}
-                      </Link>
+                          }}
+                        >
+                          <MenuItem />
+                        </Link>
+                      )}
                     </li>
                   );
                 })}

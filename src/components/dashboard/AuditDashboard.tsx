@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Zap, Users, Globe2, Target, Lock, RefreshCw, ArrowRight, AlertTriangle, Clock, MousePointer, Smartphone, Search } from 'lucide-react';
+import { BarChart3, Users, Globe2, Target, Lock, RefreshCw, ArrowRight, AlertTriangle, Clock, MousePointer, Smartphone, Search, Activity, Gauge } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useSupabase';
 import CompanyProfile from './components/CompanyProfile';
@@ -177,13 +177,13 @@ const AuditDashboard: React.FC = () => {
         <MetricCard
           title="Site Engagement Score"
           value={auditData.semrush_time_on_site ? `${Math.round(auditData.semrush_time_on_site)}s` : '••••'}
-          icon={<Clock className="w-5 h-5 text-green-400" />}
+          icon={<Activity className="w-5 h-5 text-blue-400" />}
           loading={isProcessing}
           locked={shouldLockMetrics}
         />
         <MetricCard
           title="Monthly Visitors"
-          value={auditData.semrush_total_visits ? `${(auditData.semrush_total_visits / 1000).toFixed(1)}K` : '••••'}
+          value={auditData.semrush_total_visits ? Math.round(auditData.semrush_total_visits).toLocaleString() : '••••'}
           icon={<Users className="w-5 h-5 text-purple-400" />}
           loading={isProcessing}
           locked={shouldLockMetrics}
@@ -191,14 +191,14 @@ const AuditDashboard: React.FC = () => {
         <MetricCard
           title="Traffic World Rank"
           value={auditData.semrush_traffic_rank ? auditData.semrush_traffic_rank.toLocaleString() : '••••'}
-          icon={<Globe2 className="w-5 h-5 text-blue-400" />}
+          icon={<BarChart3 className="w-5 h-5 text-blue-400" />}
           loading={isProcessing}
           locked={shouldLockMetrics}
         />
         <MetricCard
           title="Pages per Visit"
-          value={auditData.semrush_pages_per_visit ? auditData.semrush_pages_per_visit.toString() : '••••'}
-          icon={<MousePointer className="w-5 h-5 text-orange-400" />}
+          value={auditData.semrush_pages_per_visit ? auditData.semrush_pages_per_visit.toFixed(1) : '••••'}
+          icon={<MousePointer className="w-5 h-5 text-green-400" />}
           loading={isProcessing}
           locked={shouldLockMetrics}
         />
@@ -209,7 +209,7 @@ const AuditDashboard: React.FC = () => {
         {/* Traffic Sources */}
         <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Traffic Sources</h2>
+            <h2 className="text-xl font-semibold">Traffic Channels - Monthly Average</h2>
             {isProcessing && <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />}
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -223,21 +223,21 @@ const AuditDashboard: React.FC = () => {
             <MetricCard
               title="Paid Traffic"
               value={auditData.semrush_paid_visits ? auditData.semrush_paid_visits.toLocaleString() : '••••'}
-              icon={<Target className="w-5 h-5 text-purple-400" />}
+              icon={<Target className="w-5 h-5 text-blue-400" />}
               loading={isProcessing}
               locked={shouldLockMetrics}
             />
             <MetricCard
               title="Direct Traffic"
               value={auditData.semrush_direct_visits ? auditData.semrush_direct_visits.toLocaleString() : '••••'}
-              icon={<Globe2 className="w-5 h-5 text-blue-400" />}
+              icon={<Globe2 className="w-5 h-5 text-green-400" />}
               loading={isProcessing}
               locked={shouldLockMetrics}
             />
             <MetricCard
               title="Social Traffic"
               value={auditData.semrush_social_visits ? auditData.semrush_social_visits.toLocaleString() : '••••'}
-              icon={<Users className="w-5 h-5 text-orange-400" />}
+              icon={<Users className="w-5 h-5 text-purple-400" />}
               loading={isProcessing}
               locked={shouldLockMetrics}
             />
@@ -253,29 +253,15 @@ const AuditDashboard: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <MetricCard
               title="Mobile Traffic Share"
-              value={auditData.semrush_mobile_traffic_share ? `${auditData.semrush_mobile_traffic_share}%` : '••••'}
+              value={auditData.semrush_mobile_traffic_share ? `${Math.round(auditData.semrush_mobile_traffic_share * 100)}%` : '••••'}
               icon={<Smartphone className="w-5 h-5 text-blue-400" />}
               loading={isProcessing}
               locked={shouldLockMetrics}
             />
             <MetricCard
-              title="Mobile Bounce Rate"
-              value={auditData.semrush_mobile_bounce_rate ? `${auditData.semrush_mobile_bounce_rate}%` : '••••'}
-              icon={<Target className="w-5 h-5 text-red-400" />}
-              loading={isProcessing}
-              locked={shouldLockMetrics}
-            />
-            <MetricCard
-              title="Desktop Traffic Share"
-              value={auditData.semrush_mobile_traffic_share ? `${100 - auditData.semrush_mobile_traffic_share}%` : '••••'}
-              icon={<Globe2 className="w-5 h-5 text-purple-400" />}
-              loading={isProcessing}
-              locked={shouldLockMetrics}
-            />
-            <MetricCard
               title="Overall Bounce Rate"
-              value={auditData.semrush_bounce_rate ? `${auditData.semrush_bounce_rate}%` : '••••'}
-              icon={<Target className="w-5 h-5 text-orange-400" />}
+              value={auditData.semrush_bounce_rate ? `${Math.ceil(auditData.semrush_bounce_rate * 100)}%` : '••••'}
+              icon={<Gauge className="w-5 h-5 text-green-400" />}
               loading={isProcessing}
               locked={shouldLockMetrics}
             />
@@ -294,16 +280,18 @@ const AuditDashboard: React.FC = () => {
       </div>
 
       {/* Industry Trends Chart */}
-      <div className={`relative ${shouldLockMetrics ? 'blur-[2px]' : ''}`}>
+      <div className="relative bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50">
         {shouldLockMetrics && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="bg-gray-800/90 px-6 py-4 rounded-lg backdrop-blur-sm border border-gray-700">
-              <Lock className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-              <p className="text-gray-300">Sign up to view industry trends</p>
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-gray-900/70 rounded-lg backdrop-blur-[1px]">
+            <div className="text-center">
+              <Lock className="w-12 h-12 text-purple-400 mx-auto mb-3" />
+              <p className="text-gray-300 font-medium">Sign up to view industry trends</p>
             </div>
           </div>
         )}
-        <IndustryTrendsChart loading={isProcessing} />
+        <div className={!shouldLockMetrics ? '' : 'blur-[1px]'}>
+          <IndustryTrendsChart loading={isProcessing} />
+        </div>
       </div>
     </div>
   );

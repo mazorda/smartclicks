@@ -68,9 +68,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center text-sm text-gray-300 hover:text-purple-400 transition-colors"
+                title={domain}
               >
-                <Globe className="w-4 h-4 mr-1" />
-                {domain}
+                <Globe className="w-5 h-5" />
               </a>
 
               {/* LinkedIn Link */}
@@ -80,78 +80,81 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center text-sm text-gray-300 hover:text-purple-400 transition-colors"
+                  title="LinkedIn Profile"
                 >
-                  <LinkedinIcon className="w-4 h-4 mr-1" />
-                  LinkedIn Profile
+                  <LinkedinIcon className="w-5 h-5" />
                 </a>
               )}
             </div>
           </div>
         </div>
 
-        {/* Company Size and Industry */}
-        <div className="flex flex-col gap-3 lg:border-l lg:border-gray-700/50 lg:pl-6">
-          {/* Industry */}
-          <div className="flex items-center text-sm">
-            <Briefcase className="w-4 h-4 text-gray-400 mr-2" />
-            <span className="text-gray-300">Industry:</span>
-            <span className="ml-2 text-white">
-              {auditData?.clay_data?.industry || 'Not available'}
-            </span>
-          </div>
+        {/* Company Info and Specialties */}
+        <div className="flex flex-col lg:flex-row gap-6 flex-1">
+          {/* Company Info */}
+          <div className="flex flex-col gap-3 lg:border-l lg:border-gray-700/50 lg:pl-6">
+            {/* Industry */}
+            <div className="flex items-center text-sm">
+              <Briefcase className="w-4 h-4 text-gray-400 mr-2" />
+              <span className="text-gray-300">Industry:</span>
+              <span className="ml-2 text-white">
+                {auditData?.clay_data?.industry || 'Not available'}
+              </span>
+            </div>
 
-          {/* Company Size */}
-          <div className="flex items-center text-sm">
-            <Users className="w-4 h-4 text-gray-400 mr-2" />
-            <span className="text-gray-300">Company Size:</span>
-            <span className="ml-2 text-white">
-              {auditData?.clay_data?.employee_count || 'Not available'}
-            </span>
+            {/* Company Size */}
+            <div className="flex items-center text-sm">
+              <Users className="w-4 h-4 text-gray-400 mr-2" />
+              <span className="text-gray-300">Company Size:</span>
+              <span className="ml-2 text-white">
+                {auditData?.clay_data?.employee_count || 'Not available'}
+              </span>
+            </div>
           </div>
 
           {/* Specialties */}
           {auditData?.specialties && Array.isArray(auditData.specialties) && auditData.specialties.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {auditData.specialties.map((specialty, index) => (
-                <span 
-                  key={index}
-                  className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                >
-                  {specialty}
-                </span>
-              ))}
+            <div className="lg:border-l lg:border-gray-700/50 lg:pl-6 flex-1">
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Specialties</h3>
+              <div className="flex flex-wrap gap-2">
+                {auditData.specialties.map((specialty, index) => (
+                  <span 
+                    key={index}
+                    className="px-2 py-1 text-xs rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  >
+                    {specialty}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Secondary Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 border-t border-gray-700/50">
-        {/* Location */}
+      <div className="flex flex-col md:flex-row gap-4 pt-4 border-t border-gray-700/50">
         <div className="flex items-center text-sm">
           <MapPin className="w-4 h-4 text-gray-400 mr-2" />
           <span className="text-gray-300">Location:</span>
-          <span className="ml-2 text-white">
+          <span className="ml-1 text-white">
             {auditData?.city_locality && auditData?.country
               ? `${auditData.city_locality}, ${auditData.country}`
               : 'Not available'}
           </span>
         </div>
 
-        {/* Founded Year */}
         <div className="flex items-center text-sm">
           <Calendar className="w-4 h-4 text-gray-400 mr-2" />
           <span className="text-gray-300">Founded:</span>
-          <span className="ml-2 text-white">
+          <span className="ml-1 text-white">
             {auditData?.founded_year || 'Not available'}
           </span>
         </div>
 
-        {/* LinkedIn Followers */}
         <div className="flex items-center text-sm">
           <Users className="w-4 h-4 text-gray-400 mr-2" />
-          <span className="text-gray-300">LinkedIn Followers:</span>
-          <span className="ml-2 text-white">
+          <span className="text-gray-300">Social Followers:</span>
+          <span className="ml-1 text-white">
             {auditData?.linkedin_follower_count 
               ? auditData.linkedin_follower_count.toLocaleString()
               : 'Not available'}
